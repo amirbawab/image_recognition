@@ -10,6 +10,11 @@ include_directories(thirdparty/opencv/include)
 # Compile with -std=c++11
 add_compile_options(-std=c++11)
 
+# Disable IPP optimization
+option(WITH_IPP OFF)
+
 # Add sub-projects
 add_subdirectory(thirdparty/opencv)
 add_subdirectory(demo)
+
+
