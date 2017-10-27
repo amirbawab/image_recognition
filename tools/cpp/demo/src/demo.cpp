@@ -8,7 +8,7 @@ using namespace std;
 int main( int argc, char** argv ) {
 
     // Create matrix from image
-    Mat imageSrc = imread("lena1.png", CV_LOAD_IMAGE_COLOR);
+    Mat imageSrc = imread("/tmp/image.jpg", CV_LOAD_IMAGE_COLOR);
     Mat imageDest;
 
     // Create windows
