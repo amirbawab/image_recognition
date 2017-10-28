@@ -23,6 +23,11 @@ public:
     void cleanNoise();
 
     /**
+     * Draw contour around objects
+     */
+    void contour();
+
+    /**
      * Close windows on input
      */
     static void wait();

@@ -75,6 +75,7 @@ int main( int argc, char** argv ) {
     // Adjust all images
     for(auto image : images){
         image->cleanNoise();
+        image->contour();
         image->display();
     }
     Image::wait();
