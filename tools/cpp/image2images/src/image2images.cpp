@@ -7,7 +7,7 @@
 
 // Global arguments
 std::string g_inputFile;
-int g_number = PIXLES;
+int g_number = 1;
 
 /**
  * Print program usage to stdout
@@ -71,6 +71,13 @@ int main( int argc, char** argv ) {
         std::shared_ptr<Image> image = std::make_shared<Image>(mat);
         images.push_back(image);
     }
+
+    // Adjust all images
+    for(auto image : images){
+        image->cleanNoise();
+        image->display();
+    }
+    Image::wait();
 
     return 0;
 }

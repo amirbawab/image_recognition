@@ -10,6 +10,10 @@ void Image::display() {
     cv::imshow(winName.str(), *m_mat);
 }
 
+void Image::cleanNoise() {
+    cv::threshold(*m_mat, *m_mat, 70, 255 /*white background*/, CV_THRESH_BINARY);
+}
+
 void Image::wait() {
     cv::waitKey(0);
 }

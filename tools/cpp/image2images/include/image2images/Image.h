@@ -18,6 +18,11 @@ public:
     void display();
 
     /**
+     * Clean background noise
+     */
+    void cleanNoise();
+
+    /**
      * Close windows on input
      */
     static void wait();
