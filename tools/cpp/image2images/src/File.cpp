@@ -23,3 +23,10 @@ std::shared_ptr<cv::Mat> File::loadMat() {
     }
     return out;
 }
+
+void File::skipMat() {
+    double ignore;
+    for(int i=0; i < PIXLES; i++) {
+        m_input >> ignore;
+    }
+}

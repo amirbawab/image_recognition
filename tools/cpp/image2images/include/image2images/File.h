@@ -17,7 +17,12 @@ public:
 
     /**
      * Load a matrix
-     * @return
+     * @return matrix pointer
      */
     std::shared_ptr<cv::Mat> loadMat();
+
+    /**
+     * Skip mat in file
+     */
+    void skipMat();
 };
