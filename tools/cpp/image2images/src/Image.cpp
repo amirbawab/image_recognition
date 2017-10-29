@@ -1,4 +1,7 @@
 #include <image2images/Image.h>
+#include <iostream>
+
+#define NUM_OBJECTS 3
 
 // Init unique id val
 unsigned int Image::m_uniq_id = 1;
@@ -11,7 +14,11 @@ void Image::display() {
 }
 
 void Image::cleanNoise() {
+    // Binary threshold
     cv::threshold(*m_mat, *m_mat, 70, 255 /*white background*/, CV_THRESH_BINARY_INV);
+
+    // Dilate objects to merge small parts
+    cv::dilate(*m_mat, *m_mat, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));
 
     // Keep largest contours
     std::vector< std::vector<cv::Point> > contours;
@@ -19,7 +26,7 @@ void Image::cleanNoise() {
 
     // If there more than the 3 elements detected
     // then keep the largest 3 and delete the others
-    if(contours.size() > 3) {
+    if(contours.size() > NUM_OBJECTS) {
 
         // Store <index,area> in vector
         std::vector<std::pair<size_t, double>> pairs;
@@ -35,7 +42,7 @@ void Image::cleanNoise() {
         });
 
         // Delete everything after index 3
-        for(size_t i=3; i < pairs.size(); i++) {
+        for(size_t i=NUM_OBJECTS; i < pairs.size(); i++) {
             cv::drawContours(*m_mat, contours, (int) pairs[i].first, 0, CV_FILLED);
         }
     }
