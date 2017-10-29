@@ -94,11 +94,15 @@ int main( int argc, char** argv ) {
         // Clean noise objects
         image->cleanNoise();
 
+        // Recreate image
+        Image img(image->recreate());
+        img.display();
+
         // Draw contour around objects
-        image->contour();
+//        image->contour();
 
         // Display matrix
-        image->display();
+//        image->display();
     }
     Image::wait();
 

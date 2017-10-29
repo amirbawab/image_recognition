@@ -11,6 +11,11 @@ private:
     std::shared_ptr<cv::Mat> m_mat;
     std::vector< std::vector<cv::Point>> m_contours;
     unsigned int m_id = m_uniq_id++;
+
+    /**
+     * Deskew objects
+     */
+    void _deskew(cv::Mat &mat);
 public:
     Image(std::shared_ptr<cv::Mat> mat) : m_mat(mat){}
 
@@ -38,6 +43,13 @@ public:
      * Draw contour around objects
      */
     void contour();
+
+    /**
+     * Recreate matrix
+     * @param mat
+     * @return recreated matrix
+     */
+    std::shared_ptr<cv::Mat> recreate();
 
     /**
      * Close windows on input

@@ -79,6 +79,58 @@ void Image::contour() {
     }
 }
 
+std::shared_ptr<cv::Mat> Image::recreate() {
+
+    // Compute new width and height
+    int padding = 5;
+    int rows = 0;
+    int cols = padding;
+    for(size_t i=0; i < m_contours.size(); i++) {
+        cv::Rect brect = cv::boundingRect(cv::Mat(m_contours[i]).reshape(2));
+        cols += brect.width  + padding;
+        rows = std::max(rows, brect.height);
+    }
+    rows += padding*2;
+
+    // Construct and initialize a new mat
+    std::shared_ptr<cv::Mat> mat = std::make_shared<cv::Mat>(rows, cols, m_mat->type());
+    mat->setTo(cv::Scalar(0));
+
+    // Start populating the new matrix
+    int leftOffset = padding;
+    for(size_t i=0; i < m_contours.size(); i++) {
+
+        // Get object
+        cv::Rect brect = cv::boundingRect(cv::Mat(m_contours[i]).reshape(2));
+        cv::Mat elementMat = ((*m_mat)(cv::Rect(brect.tl(), brect.br())));
+
+        // Deskew element
+        // FIXME Experimental
+//        _deskew(elementMat);
+
+        // Draw element on new matrix
+        elementMat(cv::Rect(0,0,brect.width, brect.height)).copyTo(
+                (*mat)(cv::Rect(leftOffset, padding, brect.width, brect.height)));
+
+        // Update left offset
+        leftOffset += brect.width+padding;
+    }
+    return mat;
+}
+
+void Image::_deskew(cv::Mat &mat){
+    int SZ = 20;
+    int affineFlags = cv::WARP_INVERSE_MAP | cv::INTER_LINEAR;
+    cv::Moments m = cv::moments(*m_mat);
+    if(abs(m.mu02) < 1e-2) {
+        return;
+    }
+    double skew = m.mu11/m.mu02;
+    cv::Mat_<float> warpMat(2,3);
+    warpMat << 1, skew, -0.5*SZ*skew, 0, 1, 0;
+    warpAffine(mat, mat, warpMat, m_mat->size(), affineFlags);
+}
+
 void Image::wait() {
     cv::waitKey(0);
 }
