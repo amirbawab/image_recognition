@@ -85,8 +85,19 @@ int main( int argc, char** argv ) {
 
     // Adjust all images
     for(auto image : images){
+        // Convert image to binary
+        image->binarize();
+
+        // Extract objects
+        image->extract();
+
+        // Clean noise objects
         image->cleanNoise();
+
+        // Draw contour around objects
         image->contour();
+
+        // Display matrix
         image->display();
     }
     Image::wait();

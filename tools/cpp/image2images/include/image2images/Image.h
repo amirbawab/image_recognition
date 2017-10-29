@@ -6,8 +6,10 @@
 
 class Image{
 private:
-    std::shared_ptr<cv::Mat> m_mat;
     static unsigned int m_uniq_id;
+
+    std::shared_ptr<cv::Mat> m_mat;
+    std::vector< std::vector<cv::Point>> m_contours;
     unsigned int m_id = m_uniq_id++;
 public:
     Image(std::shared_ptr<cv::Mat> mat) : m_mat(mat){}
@@ -21,6 +23,16 @@ public:
      * Clean background noise
      */
     void cleanNoise();
+
+    /**
+     * Extract letters/digits from image
+     */
+    void extract();
+
+    /**
+     * Conver to binary
+     */
+    void binarize();
 
     /**
      * Draw contour around objects
