@@ -23,6 +23,7 @@ const std::string ALGO_PERMUTATION =    "permutation";
 const std::string ALGO_CLEAN =          "clean";
 const std::string ALGO_CONTOUR =        "contour";
 const std::string ALGO_DETECT =         "detect";
+const std::string ALGO_ALIGN =          "align";
 
 /**
  * Print program usage to stdout
@@ -37,6 +38,7 @@ void printUsage() {
             << "                     - " << ALGO_PERMUTATION << ": Generate new permutation images" << std::endl
             << "                     - " << ALGO_CONTOUR << ": Draw contour around objects" << std::endl
             << "                     - " << ALGO_DETECT << ": Detect elements in image" << std::endl
+            << "                     - " << ALGO_ALIGN << ": Align detected elements in image" << std::endl
             << "    -o, --output     Output directory" << std::endl
             << "    -l, --label      Label file" << std::endl
             << "    -d, --display    Show images in windows" << std::endl
@@ -156,17 +158,26 @@ int main( int argc, char** argv ) {
                     outputImage->binarize();
                 }
             } else if(algo == ALGO_PERMUTATION) {
+                std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for(auto outputImage : outputImages) {
-                    outputImages = image->permutation();
+                    std::vector<std::shared_ptr<Image>> per = image->permutation();
+                    manipOutputImages.insert(manipOutputImages.end(), per.begin(), per.end());
                 }
+                outputImages = manipOutputImages;
             } else if(algo == ALGO_DETECT){
                 for(auto outputImage : outputImages) {
                     outputImage->detectElements();
                 }
             } else if(algo == ALGO_CLEAN) {
-                for(auto outputImage : outputImages) {
+                for (auto outputImage : outputImages) {
                     outputImage->cleanNoise();
                 }
+            } else if(algo == ALGO_ALIGN) {
+                std::vector<std::shared_ptr<Image>> manipOutputImages;
+                for(auto outputImage : outputImages) {
+                    manipOutputImages.push_back(outputImage->align());
+                }
+                outputImages = manipOutputImages;
             } else if(algo == ALGO_CONTOUR) {
                 for(auto outputImage : outputImages) {
                     outputImage->contour();

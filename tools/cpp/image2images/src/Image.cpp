@@ -26,6 +26,14 @@ void Image::detectElements() {
     cv::findContours(*m_mat, m_contours, cv::RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
 }
 
+std::shared_ptr<Image> Image::align() {
+    std::vector<int> indices;
+    for(int i=0; i < m_contours.size(); i++) {
+        indices.push_back(i);
+    }
+    return _buildImage(indices);
+}
+
 void Image::cleanNoise() {
 
     // If there more than the 3 elements detected

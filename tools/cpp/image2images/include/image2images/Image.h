@@ -70,6 +70,12 @@ public:
     std::vector<std::shared_ptr<Image>> permutation();
 
     /**
+     * Align objects
+     * @return Image pointer
+     */
+    std::shared_ptr<Image> align();
+
+    /**
      * Close windows on input
      */
     static void wait();
