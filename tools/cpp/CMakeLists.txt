@@ -10,5 +10,6 @@ add_compile_options(-std=c++11)
 # Add sub-projects
 add_subdirectory(demo)
 add_subdirectory(image2images)
+add_subdirectory(neuralnetwork)
 
 
