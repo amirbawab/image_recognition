@@ -4,6 +4,7 @@
 #include <getopt.h>
 #include <image2images/File.h>
 #include <image2images/Image.h>
+#include <fstream>
 
 // Codes
 const int CODE_ERROR = 1;
@@ -16,6 +17,7 @@ std::string g_labelFile;
 int g_number = 1;
 int g_offset = 0;
 bool g_display = false;
+bool g_matrix = false;
 
 // Algorithms
 const std::string ALGO_BINARY =         "binary";
@@ -40,6 +42,7 @@ void printUsage() {
             << "                     - " << ALGO_DETECT << ": Detect elements in image" << std::endl
             << "                     - " << ALGO_ALIGN << ": Align detected elements in image" << std::endl
             << "    -o, --output     Output directory" << std::endl
+            << "    -m, --matrix     Output as matrix instead of image" << std::endl
             << "    -l, --label      Label file" << std::endl
             << "    -d, --display    Show images in windows" << std::endl
             << "    -s, --offset     Offset/Starting image" << std::endl
@@ -61,13 +64,14 @@ void initParams(int argc, char *argv[]) {
             {"offset", required_argument, 0, 's'},
             {"label", required_argument, 0, 'l'},
             {"display",   no_argument,       0, 'd'},
+            {"matrix",   no_argument,       0, 'm'},
             {"help",   no_argument,       0, 'h'},
             {0, 0,                        0, 0}
     };
 
     int optionIndex = 0;
     int c;
-    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dl:", longOptions, &optionIndex)) != -1) {
+    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dml:", longOptions, &optionIndex)) != -1) {
         switch (c) {
             case 'i':
                 g_inputFile = optarg;
@@ -83,6 +87,9 @@ void initParams(int argc, char *argv[]) {
                 break;
             case 'a':
                 g_algos.push_back(optarg);
+                break;
+            case 'm':
+                g_matrix = true;
                 break;
             case 'd':
                 g_display = true;
@@ -193,10 +200,30 @@ int main( int argc, char** argv ) {
         if(!g_outputDir.empty()) {
             for(auto outputImage : outputImages) {
                 std::stringstream fileName;
-                fileName << g_outputDir << "/" << outputImage->getValue() << "/" << outputImage->getId() << ".jpg";
-                std::cout << ">> Generating image: " << fileName.str() << std::endl;
-                if(!cv::imwrite(fileName.str(), *outputImage->getMat())) {
-                    std::cerr << "Error generating image: " << fileName.str() << std::endl;
+                fileName << g_outputDir << "/" << outputImage->getValue() << "/" << outputImage->getId();
+                if(!g_matrix) {
+                    fileName << ".jpg";
+                    std::cout << ">> Generating image: " << fileName.str() << std::endl;
+                    if(!cv::imwrite(fileName.str(), *outputImage->getMat())) {
+                        std::cerr << "Error generating image: " << fileName.str() << std::endl;
+                    }
+                } else {
+                    fileName << ".csv";
+                    std::cout << ">> Generating matrix: " << fileName.str() << std::endl;
+                    std::ofstream matrixFile(fileName.str());
+                    if(!matrixFile.is_open()) {
+                        std::cerr << "Error generating matrix: " << fileName.str() << std::endl;
+                    } else {
+                        for(int row=0; row < outputImage->getMat()->rows; row++) {
+                            for(int col=0; col < outputImage->getMat()->cols; col++) {
+                                if(row != 0 || col != 0) {
+                                    matrixFile << ",";
+                                }
+                                matrixFile << (int)outputImage->getMat()->at<uchar>(row, col);
+                            }
+                        }
+                        matrixFile.close();
+                    }
                 }
             }
         }
