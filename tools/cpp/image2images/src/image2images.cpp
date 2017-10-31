@@ -5,10 +5,14 @@
 #include <image2images/File.h>
 #include <image2images/Image.h>
 
+// Codes
+const int CODE_ERROR = 1;
+
 // Global arguments
 std::vector<std::string> g_algos;
 std::string g_inputFile;
-std::string g_outputFile;
+std::string g_outputDir;
+std::string g_labelFile;
 int g_number = 1;
 int g_offset = 0;
 bool g_display = false;
@@ -33,7 +37,8 @@ void printUsage() {
             << "                     - " << ALGO_PERMUTATION << ": Generate new permutation images" << std::endl
             << "                     - " << ALGO_CONTOUR << ": Draw contour around objects" << std::endl
             << "                     - " << ALGO_DETECT << ": Detect elements in image" << std::endl
-            << "    -o, --output     Output file" << std::endl
+            << "    -o, --output     Output directory" << std::endl
+            << "    -l, --label      Label file" << std::endl
             << "    -d, --display    Show images in windows" << std::endl
             << "    -s, --offset     Offset/Starting image" << std::endl
             << "    -n, --number     Number of images to show" << std::endl
@@ -52,6 +57,7 @@ void initParams(int argc, char *argv[]) {
             {"algorithm", required_argument, 0, 'a'},
             {"number", required_argument, 0, 'n'},
             {"offset", required_argument, 0, 's'},
+            {"label", required_argument, 0, 'l'},
             {"display",   no_argument,       0, 'd'},
             {"help",   no_argument,       0, 'h'},
             {0, 0,                        0, 0}
@@ -59,7 +65,7 @@ void initParams(int argc, char *argv[]) {
 
     int optionIndex = 0;
     int c;
-    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:d", longOptions, &optionIndex)) != -1) {
+    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dl:", longOptions, &optionIndex)) != -1) {
         switch (c) {
             case 'i':
                 g_inputFile = optarg;
@@ -67,8 +73,11 @@ void initParams(int argc, char *argv[]) {
             case 's':
                 g_offset = atoi(optarg);
                 break;
+            case 'l':
+                g_labelFile = optarg;
+                break;
             case 'o':
-                g_outputFile= optarg;
+                g_outputDir= optarg;
                 break;
             case 'a':
                 g_algos.push_back(optarg);
@@ -96,25 +105,45 @@ int main( int argc, char** argv ) {
         return 0;
     }
 
-    // Load file
-    File file(g_inputFile);
-    int count = 0;
+    // Check if input file was found
+    File file;
+    if(!file.setInputFile(g_inputFile)) {
+        std::cerr << "Error opening input file: " << g_inputFile << std::endl;
+        return CODE_ERROR;
+    }
+
+    // Check if label file was found
+    if(!g_labelFile.empty() && !file.setLabelFile(g_labelFile)) {
+        std::cerr << "Error opening csv file: " << g_labelFile << std::endl;
+        return CODE_ERROR;
+    }
 
     // Create and store all images
+    int count = 0;
     std::vector<std::shared_ptr<Image>> images;
+    std::cout << "Loading images ..." << std::endl;
     while (count < g_offset + g_number) {
         if(count < g_offset) {
             file.skipMat();
         } else {
-            std::shared_ptr<cv::Mat> mat = file.loadMat();
-            std::shared_ptr<Image> image = std::make_shared<Image>(mat);
-            images.push_back(image);
+            images.push_back(file.loadImage());
         }
         count++;
+
+        // Log
+        int progress = count - g_offset;
+        if(progress > 0 && progress % 100 == 0) {
+            std::cout << ">> Loaded " << progress << " images out of " << g_number << std::endl;
+        }
     }
 
     // Adjust all images
-    for(auto image : images){
+    std::cout << "Starting image processing ..." << std::endl;
+    int progress = 0;
+    for(std::shared_ptr<Image> image : images){
+        if(progress % 100 == 0) {
+            std::cout << ">> Processed " << progress << " images out of " << images.size() << std::endl;
+        }
 
         // Prepare vector for the images to generate
         std::vector<std::shared_ptr<Image>> outputImages;
@@ -142,14 +171,25 @@ int main( int argc, char** argv ) {
                 for(auto outputImage : outputImages) {
                     outputImage->contour();
                 }
-            } else {
-                std::cerr << "Algorithm " << algo << " was not found!" << std::endl;
+            }
+        }
+
+        // Generate output
+        if(!g_outputDir.empty()) {
+            for(auto outputImage : outputImages) {
+                std::stringstream fileName;
+                fileName << g_outputDir << "/" << outputImage->getValue() << "/" << outputImage->getId() << ".jpg";
+                std::cout << ">> Generating image: " << fileName.str() << std::endl;
+                if(!cv::imwrite(fileName.str(), *outputImage->getMat())) {
+                    std::cerr << "Error generating image: " << fileName.str() << std::endl;
+                }
             }
         }
 
         // Display output images
         if(g_display) {
             for(auto outputImage : outputImages) {
+                std::cout << ">> Displaying image id: " << outputImage->getId() << std::endl;
                 outputImage->display();
             }
             // Pause if new images found
@@ -157,6 +197,9 @@ int main( int argc, char** argv ) {
                 Image::wait();
             }
         }
+
+        // Update progress counter
+        progress++;
     }
 
     return 0;

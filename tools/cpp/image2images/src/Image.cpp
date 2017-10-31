@@ -4,7 +4,7 @@
 #define NUM_OBJECTS 3
 
 // Init unique id val
-unsigned int Image::m_uniq_id = 1;
+long Image::m_uniq_id = 1;
 
 void Image::display() {
     std::stringstream winName;
@@ -131,6 +131,7 @@ void Image::_permutation(std::vector<std::shared_ptr<Image>> &outputImages, std:
     if(indices.size() == m_contours.size()) {
         std::shared_ptr<Image> newImage = _buildImage(indices);
         if(newImage) {
+            newImage->m_value = m_value;
             outputImages.push_back(newImage);
         }
     } else {

@@ -5,13 +5,16 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+#define NO_VALUE 777
+
 class Image{
 private:
-    static unsigned int m_uniq_id;
+    static long m_uniq_id;
 
     std::shared_ptr<cv::Mat> m_mat;
     std::vector<std::vector<cv::Point>> m_contours;
-    unsigned int m_id = m_uniq_id++;
+    int m_value;
+    long m_id = m_uniq_id++;
 
     /**
      * Deskew objects
@@ -32,7 +35,7 @@ private:
      */
     std::shared_ptr<Image> _buildImage(const std::vector<int> &indices);
 public:
-    Image(std::shared_ptr<cv::Mat> mat) : m_mat(mat){}
+    Image(std::shared_ptr<cv::Mat> mat, int value = NO_VALUE) : m_mat(mat), m_value(value){}
 
     /**
      * Display image
@@ -70,4 +73,22 @@ public:
      * Close windows on input
      */
     static void wait();
+
+    /**
+     * Get value
+     * @return value or -1 if not set
+     */
+    int getValue() const {return m_value;}
+
+    /**
+     * Get matrix
+     * @return matrix
+     */
+    std::shared_ptr<cv::Mat> getMat() const {return m_mat;}
+
+    /**
+     * Get id
+     * @return unique image id
+     */
+    long getId() const { return m_id;}
 };
