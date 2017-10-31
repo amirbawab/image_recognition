@@ -186,6 +186,9 @@ int main( int argc, char** argv ) {
                     // TODO Handle case of image cannot be created
                     if(align) {
                         manipOutputImages.push_back(align);
+                    } else {
+                        // FIXME Temp solution, maybe will keep it?
+                        manipOutputImages.push_back(outputImage);
                     }
                 }
                 outputImages = manipOutputImages;
