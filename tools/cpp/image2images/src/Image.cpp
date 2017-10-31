@@ -13,16 +13,17 @@ void Image::display() {
     cv::imshow(winName.str(), *m_mat);
 }
 
-void Image::extract() {
-    cv::findContours(*m_mat, m_contours, cv::RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
-}
-
 void Image::binarize() {
     // Apply binary threshold
     cv::threshold(*m_mat, *m_mat, 70, 255 /*white background*/, CV_THRESH_BINARY_INV);
 
     // Dilate objects to merge small parts
     cv::dilate(*m_mat, *m_mat, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));
+}
+
+void Image::detectElements() {
+    // Find contours
+    cv::findContours(*m_mat, m_contours, cv::RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
 }
 
 void Image::cleanNoise() {
@@ -79,43 +80,75 @@ void Image::contour() {
     }
 }
 
-std::shared_ptr<cv::Mat> Image::recreate() {
+std::shared_ptr<Image> Image::_buildImage(const std::vector<int> &indices) {
 
     // Compute new width and height
-    int padding = 5;
-    int rows = 0;
-    int cols = padding;
-    for(size_t i=0; i < m_contours.size(); i++) {
-        cv::Rect brect = cv::boundingRect(cv::Mat(m_contours[i]).reshape(2));
-        cols += brect.width  + padding;
-        rows = std::max(rows, brect.height);
-    }
-    rows += padding*2;
+    int padding = 3;
+    int rows = 70;
+    int cols = 100;
 
     // Construct and initialize a new mat
     std::shared_ptr<cv::Mat> mat = std::make_shared<cv::Mat>(rows, cols, m_mat->type());
     mat->setTo(cv::Scalar(0));
 
+    // Construct image
+    std::shared_ptr<Image> image = std::make_shared<Image>(mat);
+
     // Start populating the new matrix
-    int leftOffset = padding;
-    for(size_t i=0; i < m_contours.size(); i++) {
+    int leftOffset = 0;
+    int topOffset = padding;
+    for(size_t i=0; i < indices.size(); i++) {
+
+        // Update left offset
+        leftOffset += padding;
 
         // Get object
-        cv::Rect brect = cv::boundingRect(cv::Mat(m_contours[i]).reshape(2));
+        cv::Rect brect = cv::boundingRect(cv::Mat(m_contours[indices[i]]).reshape(2));
         cv::Mat elementMat = ((*m_mat)(cv::Rect(brect.tl(), brect.br())));
 
         // Deskew element
         // FIXME Experimental
 //        _deskew(elementMat);
 
+        // Verify that the new image fits the matrix
+        // This maximizes the number of potential well
+        // formed images
+        if(leftOffset + brect.width >= mat->cols || topOffset + brect.height >= mat->rows) {
+            return nullptr;
+        }
+
         // Draw element on new matrix
         elementMat(cv::Rect(0,0,brect.width, brect.height)).copyTo(
                 (*mat)(cv::Rect(leftOffset, padding, brect.width, brect.height)));
 
         // Update left offset
-        leftOffset += brect.width+padding;
+        leftOffset += brect.width + padding;
     }
-    return mat;
+    return image;
+}
+
+void Image::_permutation(std::vector<std::shared_ptr<Image>> &outputImages, std::vector<int> &indices) {
+    if(indices.size() == m_contours.size()) {
+        std::shared_ptr<Image> newImage = _buildImage(indices);
+        if(newImage) {
+            outputImages.push_back(newImage);
+        }
+    } else {
+        for(int i=0; i < m_contours.size(); i++) {
+            if(std::find(indices.begin(), indices.end(), i) == indices.end()) {
+                indices.push_back(i);
+                _permutation(outputImages, indices);
+                indices.pop_back();
+            }
+        }
+    }
+}
+
+std::vector<std::shared_ptr<Image>> Image::permutation() {
+    std::vector<std::shared_ptr<Image>> perImages;
+    std::vector<int> indices;
+    _permutation(perImages, indices);
+    return perImages;
 }
 
 void Image::_deskew(cv::Mat &mat){
