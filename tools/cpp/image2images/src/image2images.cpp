@@ -175,7 +175,11 @@ int main( int argc, char** argv ) {
             } else if(algo == ALGO_ALIGN) {
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for(auto outputImage : outputImages) {
-                    manipOutputImages.push_back(outputImage->align());
+                    std::shared_ptr<Image> align = outputImage->align();
+                    // TODO Handle case of image cannot be created
+                    if(align) {
+                        manipOutputImages.push_back(align);
+                    }
                 }
                 outputImages = manipOutputImages;
             } else if(algo == ALGO_CONTOUR) {
