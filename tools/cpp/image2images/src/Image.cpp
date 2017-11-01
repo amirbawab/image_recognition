@@ -17,9 +17,9 @@ void Image::display() {
     cv::imshow(winName.str(), *m_mat);
 }
 
-void Image::binarize() {
+void Image::binarize(int threshold) {
     // Apply binary threshold
-    cv::threshold(*m_mat, *m_mat, 70, 255 /*white background*/, CV_THRESH_BINARY_INV);
+    cv::threshold(*m_mat, *m_mat, threshold, 255 /*white background*/, CV_THRESH_BINARY_INV);
 
     // Dilate objects to merge small parts
     cv::dilate(*m_mat, *m_mat, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));

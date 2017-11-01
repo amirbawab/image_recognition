@@ -27,8 +27,7 @@ const std::string ALGO_CONTOUR =        "contour";
 const std::string ALGO_DETECT =         "detect";
 const std::string ALGO_ALIGN =          "align";
 const std::string ALGO_SPLIT =          "split";
-const std::string ALGO_ROTATE_P45 =     "rotate+45";
-const std::string ALGO_ROTATE_N45 =     "rotate-45";
+const std::string ALGO_ROTATE =         "rotate";
 
 /**
  * Print program usage to stdout
@@ -38,15 +37,15 @@ void printUsage() {
             << "image2images - Process images" << std::endl
             << "    -i, --input      Input file" << std::endl
             << "    -a, --algorithm  Algorithms" << std::endl
-            << "                     - " << ALGO_BINARY << ": Convert image to binary" << std::endl
+            << "                     - " << ALGO_BINARY << "{1..255}: Convert image to binary with the "
+                                                        << "provided threshold" << std::endl
             << "                     - " << ALGO_CLEAN << ": Clean noise in image" << std::endl
             << "                     - " << ALGO_PERMUTATION << ": Generate new permutation images" << std::endl
             << "                     - " << ALGO_CONTOUR << ": Draw contour around objects" << std::endl
             << "                     - " << ALGO_DETECT << ": Detect elements in image" << std::endl
             << "                     - " << ALGO_ALIGN << ": Align detected elements in image" << std::endl
             << "                     - " << ALGO_SPLIT << ": Generate an image per detected element" << std::endl
-            << "                     - " << ALGO_ROTATE_P45 << ": Rotate images +45" << std::endl
-            << "                     - " << ALGO_ROTATE_N45 << ": Rotate images -45" << std::endl
+            << "                     - " << ALGO_ROTATE << "{1..360}: Rotate images by the provided angle" << std::endl
             << "    -o, --output     Output directory" << std::endl
             << "    -m, --matrix     Output as matrix instead of image" << std::endl
             << "    -l, --label      Label file" << std::endl
@@ -164,9 +163,10 @@ int main( int argc, char** argv ) {
 
         // Apply algorithms
         for(std::string algo : g_algos) {
-            if(algo == ALGO_BINARY) {
+            if(algo.rfind(ALGO_BINARY, 0) == 0 && algo.size() > ALGO_BINARY.size()) {
+                int val = atoi(algo.substr(ALGO_BINARY.size(), algo.size() - ALGO_BINARY.size()).c_str());
                 for(auto outputImage : outputImages) {
-                    outputImage->binarize();
+                    outputImage->binarize(val);
                 }
             } else if(algo == ALGO_PERMUTATION) {
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
@@ -193,13 +193,10 @@ int main( int argc, char** argv ) {
                     }
                 }
                 outputImages = manipOutputImages;
-            } else if(algo == ALGO_ROTATE_P45) {
+            } else if(algo.rfind(ALGO_ROTATE, 0) == 0 && algo.size() > ALGO_ROTATE.size()) {
+                int val = atoi(algo.substr(ALGO_ROTATE.size(), algo.size() - ALGO_ROTATE.size()).c_str());
                 for (auto outputImage : outputImages) {
-                    outputImage->rotate(45);
-                }
-            } else if(algo == ALGO_ROTATE_N45) {
-                for (auto outputImage : outputImages) {
-                    outputImage->rotate(-45);
+                    outputImage->rotate(val);
                 }
             } else if(algo == ALGO_SPLIT) {
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
@@ -212,6 +209,8 @@ int main( int argc, char** argv ) {
                 for(auto outputImage : outputImages) {
                     outputImage->contour();
                 }
+            } else {
+                std::cerr << "Algorithm " << algo << " not found!" << std::endl;
             }
         }
 

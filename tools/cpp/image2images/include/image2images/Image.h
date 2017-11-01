@@ -50,9 +50,10 @@ public:
     void cleanNoise();
 
     /**
-     * Conver to binary
+     * Convert to binary
+     * @param threshold
      */
-    void binarize();
+    void binarize(int threshold);
 
     /**
      * Detect elements in matrix
