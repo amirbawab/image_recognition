@@ -4,7 +4,7 @@
 
 ### Requirements
 * Linux/Mac OS
-* OpenCV 3.3.1 [GitHub](#https://github.com/opencv/opencv/tree/3.3.1)
+* OpenCV 3.3.1 [GitHub](https://github.com/opencv/opencv/tree/3.3.1)
 * Compile C++ tools `cd tools/cpp && cmake . && make`
 
 ### Prepare and preproecss input
