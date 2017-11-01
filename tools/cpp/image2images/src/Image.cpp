@@ -2,6 +2,10 @@
 #include <iostream>
 
 #define NUM_OBJECTS 3
+#define ALIGN_ROWS 70
+#define ALIGN_COLS 100
+#define SPLIT_ROWS 50
+#define SPLIT_COLS 50
 
 // Init unique id val
 long Image::m_uniq_id = 1;
@@ -31,7 +35,7 @@ std::shared_ptr<Image> Image::align() {
     for(int i=0; i < m_contours.size(); i++) {
         indices.push_back(i);
     }
-    return _buildImage(indices);
+    return _buildImage(ALIGN_ROWS, ALIGN_COLS, indices);
 }
 
 void Image::cleanNoise() {
@@ -88,12 +92,10 @@ void Image::contour() {
     }
 }
 
-std::shared_ptr<Image> Image::_buildImage(const std::vector<int> &indices) {
+std::shared_ptr<Image> Image::_buildImage(int rows, int cols, const std::vector<int> &indices) {
 
     // Compute new width and height
     int padding = 3;
-    int rows = 70;
-    int cols = 100;
 
     // Construct and initialize a new mat
     std::shared_ptr<cv::Mat> mat = std::make_shared<cv::Mat>(rows, cols, m_mat->type());
@@ -132,14 +134,16 @@ std::shared_ptr<Image> Image::_buildImage(const std::vector<int> &indices) {
         // Update left offset
         leftOffset += brect.width + padding;
     }
+
+    // Update value
+    image->m_value = m_value;
     return image;
 }
 
 void Image::_permutation(std::vector<std::shared_ptr<Image>> &outputImages, std::vector<int> &indices) {
     if(indices.size() == m_contours.size()) {
-        std::shared_ptr<Image> newImage = _buildImage(indices);
+        std::shared_ptr<Image> newImage = _buildImage(ALIGN_ROWS, ALIGN_COLS, indices);
         if(newImage) {
-            newImage->m_value = m_value;
             outputImages.push_back(newImage);
         }
     } else {
@@ -171,6 +175,18 @@ void Image::_deskew(cv::Mat &mat){
     cv::Mat_<float> warpMat(2,3);
     warpMat << 1, skew, -0.5*SZ*skew, 0, 1, 0;
     warpAffine(mat, mat, warpMat, m_mat->size(), affineFlags);
+}
+
+std::vector<std::shared_ptr<Image>> Image::split() {
+    std::vector<std::shared_ptr<Image>> splitImages;
+    for(int i=0; i < m_contours.size(); i++) {
+        std::vector<int> indices = {i};
+        std::shared_ptr<Image> elementImage = _buildImage(SPLIT_ROWS, SPLIT_COLS, indices);
+        if(elementImage) {
+            splitImages.push_back(elementImage);
+        }
+    }
+    return splitImages;
 }
 
 void Image::wait() {

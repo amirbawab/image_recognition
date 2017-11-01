@@ -26,6 +26,7 @@ const std::string ALGO_CLEAN =          "clean";
 const std::string ALGO_CONTOUR =        "contour";
 const std::string ALGO_DETECT =         "detect";
 const std::string ALGO_ALIGN =          "align";
+const std::string ALGO_SPLIT =          "split";
 
 /**
  * Print program usage to stdout
@@ -41,6 +42,7 @@ void printUsage() {
             << "                     - " << ALGO_CONTOUR << ": Draw contour around objects" << std::endl
             << "                     - " << ALGO_DETECT << ": Detect elements in image" << std::endl
             << "                     - " << ALGO_ALIGN << ": Align detected elements in image" << std::endl
+            << "                     - " << ALGO_SPLIT << ": Generate an image per detected element" << std::endl
             << "    -o, --output     Output directory" << std::endl
             << "    -m, --matrix     Output as matrix instead of image" << std::endl
             << "    -l, --label      Label file" << std::endl
@@ -149,10 +151,8 @@ int main( int argc, char** argv ) {
     // Adjust all images
     std::cout << "Starting image processing ..." << std::endl;
     int progress = 0;
+    bool windowOpen = false;
     for(std::shared_ptr<Image> image : images){
-        if(progress % 100 == 0) {
-            std::cout << ">> Processed " << progress << " images out of " << images.size() << std::endl;
-        }
 
         // Prepare vector for the images to generate
         std::vector<std::shared_ptr<Image>> outputImages;
@@ -181,15 +181,19 @@ int main( int argc, char** argv ) {
                 }
             } else if(algo == ALGO_ALIGN) {
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
-                for(auto outputImage : outputImages) {
+                for (auto outputImage : outputImages) {
                     std::shared_ptr<Image> align = outputImage->align();
                     // TODO Handle case of image cannot be created
-                    if(align) {
+                    if (align) {
                         manipOutputImages.push_back(align);
-                    } else {
-                        // FIXME Temp solution, maybe will keep it?
-                        manipOutputImages.push_back(outputImage);
                     }
+                }
+                outputImages = manipOutputImages;
+            } else if(algo == ALGO_SPLIT) {
+                std::vector<std::shared_ptr<Image>> manipOutputImages;
+                for(auto outputImage : outputImages) {
+                    std::vector<std::shared_ptr<Image>> split = outputImage->split();
+                    manipOutputImages.insert(manipOutputImages.end(), split.begin(), split.end());
                 }
                 outputImages = manipOutputImages;
             } else if(algo == ALGO_CONTOUR) {
@@ -203,7 +207,8 @@ int main( int argc, char** argv ) {
         if(!g_outputDir.empty()) {
             for(auto outputImage : outputImages) {
                 std::stringstream fileName;
-                fileName << g_outputDir << "/" << outputImage->getValue() << "/" << outputImage->getId();
+                fileName << g_outputDir << "/" << outputImage->getValue() << "/" << progress << "_"
+                         << outputImage->getId();
                 if(!g_matrix) {
                     fileName << ".jpg";
                     std::cout << ">> Generating image: " << fileName.str() << std::endl;
@@ -236,15 +241,19 @@ int main( int argc, char** argv ) {
             for(auto outputImage : outputImages) {
                 std::cout << ">> Displaying image id: " << outputImage->getId() << std::endl;
                 outputImage->display();
-            }
-            // Pause if new images found
-            if(!outputImages.empty()) {
-                Image::wait();
+                windowOpen = true;
             }
         }
 
-        // Update progress counter
-        progress++;
+        // Log
+        if(++progress % 100 == 0) {
+            std::cout << ">> Processed " << progress << " images out of " << images.size() << std::endl;
+        }
+    }
+
+    // Pause if new images found
+    if(windowOpen) {
+        Image::wait();
     }
 
     return 0;

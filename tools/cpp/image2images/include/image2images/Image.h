@@ -30,10 +30,12 @@ private:
 
     /**
      * Generate a new image
+     * @param rows
+     * @param cols
      * @parm indcies
      * @return generate image
      */
-    std::shared_ptr<Image> _buildImage(const std::vector<int> &indices);
+    std::shared_ptr<Image> _buildImage(int rows, int cols, const std::vector<int> &indices);
 public:
     Image(std::shared_ptr<cv::Mat> mat, int value = NO_VALUE) : m_mat(mat), m_value(value){}
 
@@ -85,6 +87,12 @@ public:
      * @return value or -1 if not set
      */
     int getValue() const {return m_value;}
+
+    /**
+     * Generate an image per detected element
+     * @return vector of images
+     */
+    std::vector<std::shared_ptr<Image>> split();
 
     /**
      * Get matrix
