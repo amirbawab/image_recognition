@@ -45,6 +45,8 @@ void printUsage() {
             << "                     - " << ALGO_DETECT << ": Detect elements in image" << std::endl
             << "                     - " << ALGO_ALIGN << ": Align detected elements in image" << std::endl
             << "                     - " << ALGO_SPLIT << ": Generate an image per detected element" << std::endl
+            << "                     - " << ALGO_ROTATE_P45 << ": Rotate images +45" << std::endl
+            << "                     - " << ALGO_ROTATE_N45 << ": Rotate images -45" << std::endl
             << "    -o, --output     Output directory" << std::endl
             << "    -m, --matrix     Output as matrix instead of image" << std::endl
             << "    -l, --label      Label file" << std::endl
