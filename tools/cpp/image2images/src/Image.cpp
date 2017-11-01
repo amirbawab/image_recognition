@@ -18,12 +18,50 @@ void Image::display() {
     cv::imshow(winName.str(), *m_mat);
 }
 
-void Image::binarize(int threshold) {
+void Image::_binarize(std::shared_ptr<Image> binImage, int threshold) {
+    // Create a new matrix
+    binImage->m_mat = std::make_shared<cv::Mat>(m_mat->rows, m_mat->cols, m_mat->type());
+
     // Apply binary threshold
-    cv::threshold(*m_mat, *m_mat, threshold, 255 /*white background*/, CV_THRESH_BINARY_INV);
+    cv::threshold(*m_mat, *binImage->getMat(), threshold, 255, CV_THRESH_BINARY_INV);
 
     // Dilate objects to merge small parts
-    cv::dilate(*m_mat, *m_mat, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));
+    cv::dilate(*binImage->getMat(), *binImage->getMat(), cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));
+
+    // Detect elements
+    binImage->detectElements();
+}
+
+double Image::_averagePixelVal() {
+    double sum = 0;
+    for(int row=0; row < m_mat->rows; row++) {
+        for(int col=0; col < m_mat->cols; col++) {
+            sum += (int) m_mat->at<uchar>(row, col);
+        }
+    }
+    return sum / (m_mat->rows * m_mat->cols);
+}
+
+std::shared_ptr<Image> Image::binarize(int threshold) {
+    std::shared_ptr<Image> binImage = std::make_shared<Image>();
+
+    // Average pixel threshold
+    const int AVG_THERSHOLD = 50;
+
+    // If threshold is 0, then try to get the best
+    // binary image
+    if(threshold == 0) {
+        int startThreshold = (int)_averagePixelVal();
+        do{
+            _binarize(binImage, startThreshold);
+            startThreshold -= 5;
+            std::cout << startThreshold << std::endl;
+        } while(startThreshold > 0 && (binImage->m_contours.size() > NUM_OBJECTS || binImage->_averagePixelVal() > AVG_THERSHOLD));
+    } else {
+        _binarize(binImage, threshold);
+    }
+    binImage->m_value = m_value;
+    return binImage;
 }
 
 void Image::detectElements() {

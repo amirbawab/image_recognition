@@ -36,8 +36,22 @@ private:
      * @return generate image
      */
     std::shared_ptr<Image> _buildImage(int rows, int cols, const std::vector<int> &indices);
+
+    /**
+     * Generate binary image
+     * @param image
+     * @param threshold
+     * @return binary image
+     */
+    void _binarize(std::shared_ptr<Image> image, int threshold);
+
+    /**
+     * Get the average pixel value in matrix
+     * @return average
+     */
+    double _averagePixelVal();
 public:
-    Image(std::shared_ptr<cv::Mat> mat, int value = NO_VALUE) : m_mat(mat), m_value(value){}
+    Image(std::shared_ptr<cv::Mat> mat = nullptr, int value = NO_VALUE) : m_mat(mat), m_value(value){}
 
     /**
      * Display image
@@ -53,7 +67,7 @@ public:
      * Convert to binary
      * @param threshold
      */
-    void binarize(int threshold);
+    std::shared_ptr<Image> binarize(int threshold);
 
     /**
      * Detect elements in matrix

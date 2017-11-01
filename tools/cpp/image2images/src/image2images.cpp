@@ -165,9 +165,12 @@ int main( int argc, char** argv ) {
         for(std::string algo : g_algos) {
             if(algo.rfind(ALGO_BINARY, 0) == 0 && algo.size() > ALGO_BINARY.size()) {
                 int val = atoi(algo.substr(ALGO_BINARY.size(), algo.size() - ALGO_BINARY.size()).c_str());
+                std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for(auto outputImage : outputImages) {
-                    outputImage->binarize(val);
+                    std::shared_ptr<Image> binImage = outputImage->binarize(val);
+                    manipOutputImages.push_back(binImage);
                 }
+                outputImages = manipOutputImages;
             } else if(algo == ALGO_PERMUTATION) {
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for(auto outputImage : outputImages) {
