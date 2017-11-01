@@ -174,7 +174,7 @@ int main( int argc, char** argv ) {
             } else if(algo == ALGO_PERMUTATION) {
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for(auto outputImage : outputImages) {
-                    std::vector<std::shared_ptr<Image>> per = image->permutation();
+                    std::vector<std::shared_ptr<Image>> per = outputImage->permutation();
                     manipOutputImages.insert(manipOutputImages.end(), per.begin(), per.end());
                 }
                 outputImages = manipOutputImages;
