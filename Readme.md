@@ -1,11 +1,11 @@
 # MNIST
 
-## Commands
-
-### Requirements
+## Requirements
 * Linux/Mac OS
 * OpenCV 3.3.1 [GitHub](https://github.com/opencv/opencv/tree/3.3.1)
 * Compile C++ tools `cd tools/cpp && cmake . && make`
+
+## Commands
 
 ### Prepare and preproecss input
 #### Enhance training input format
@@ -14,13 +14,13 @@ cd tools/bash
 ./preprocess.sh <input-file> <output-file>
 ```
 
-### Generate output directories
+#### Generate output directories
 ```
 cd tools/bash
 ./output-dirs.sh <directory>
 ```
 
-#### Image 2 Images
+### Image 2 Images
 For all options, use the `--help` flag
 
 #### Display one manipulated image
