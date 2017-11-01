@@ -55,7 +55,6 @@ std::shared_ptr<Image> Image::binarize(int threshold) {
         do{
             _binarize(binImage, startThreshold);
             startThreshold -= 5;
-            std::cout << startThreshold << std::endl;
         } while(startThreshold > 0 && (binImage->m_contours.size() > NUM_OBJECTS || binImage->_averagePixelVal() > AVG_THERSHOLD));
     } else {
         _binarize(binImage, threshold);
