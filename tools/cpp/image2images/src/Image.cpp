@@ -245,6 +245,13 @@ void Image::rotate(int angle) {
 }
 
 std::vector<std::shared_ptr<Image>> Image::mnist() {
+    // Copy matrix to a larger one
+    std::shared_ptr<cv::Mat> largerMat = std::make_shared<cv::Mat>(SPLIT_ROWS, SPLIT_COLS, m_mat->type());
+    largerMat->setTo(cv::Scalar(0));
+    cv::Rect roi( cv::Point(10, 10), m_mat->size() );
+    m_mat->copyTo((*largerMat)(roi));
+    m_mat = largerMat;
+
     // Prepare mnist vector
     std::vector<std::shared_ptr<Image>> mnistVector;
     mnistVector.push_back(shared_from_this());

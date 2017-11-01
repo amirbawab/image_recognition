@@ -6,6 +6,11 @@
 #include <image2images/Image.h>
 #include <fstream>
 
+#define DATA_ROWS 64
+#define DATA_COLS 64
+#define MNIST_ROWS 28
+#define MNIST_COLS 28
+
 // Codes
 const int CODE_ERROR = 1;
 
@@ -18,6 +23,7 @@ int g_number = 1;
 int g_offset = 0;
 bool g_display = false;
 bool g_matrix = false;
+bool g_mnist = false;
 
 // Algorithms
 const std::string ALGO_BINARY =         "binary";
@@ -37,6 +43,7 @@ void printUsage() {
     std::cout
             << "image2images - Process images" << std::endl
             << "    -i, --input      Input file" << std::endl
+            << "    -M, --MNIST      Reconfigure the input format to read MNIST" << std::endl
             << "    -a, --algorithm  Algorithms" << std::endl
             << "                     - " << ALGO_BINARY << "{1..255}: Convert image to binary with the "
                                                         << "provided threshold" << std::endl
@@ -65,6 +72,7 @@ void printUsage() {
 void initParams(int argc, char *argv[]) {
     struct option longOptions[] = {
             {"input", required_argument,  0, 'i'},
+            {"MNIST", required_argument,  0, 'M'},
             {"output", required_argument, 0, 'o'},
             {"algorithm", required_argument, 0, 'a'},
             {"number", required_argument, 0, 'n'},
@@ -78,7 +86,7 @@ void initParams(int argc, char *argv[]) {
 
     int optionIndex = 0;
     int c;
-    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dml:", longOptions, &optionIndex)) != -1) {
+    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dmMl:", longOptions, &optionIndex)) != -1) {
         switch (c) {
             case 'i':
                 g_inputFile = optarg;
@@ -104,6 +112,9 @@ void initParams(int argc, char *argv[]) {
             case 'n':
                 g_number = atoi(optarg);
                 break;
+            case 'M':
+                g_mnist = true;
+                break;
             case 'h':
             default:
                 break;
@@ -122,7 +133,13 @@ int main( int argc, char** argv ) {
     }
 
     // Check if input file was found
-    File file;
+    int rows = DATA_ROWS;
+    int cols = DATA_COLS;
+    if(g_mnist) {
+        rows = MNIST_ROWS;
+        cols = MNIST_COLS;
+    }
+    File file(rows, cols);
     if(!file.setInputFile(g_inputFile)) {
         std::cerr << "Error opening input file: " << g_inputFile << std::endl;
         return CODE_ERROR;

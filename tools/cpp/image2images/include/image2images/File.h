@@ -6,15 +6,14 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#define ROWS 64
-#define COLS 64
-#define PIXLES ROWS * COLS
-
 class File {
 private:
+    int m_imgRows;
+    int m_imgCols;
     std::ifstream m_input;
     std::ifstream m_label;
 public:
+    File(int rows, int cols) : m_imgRows(rows), m_imgCols(cols) {}
 
     /**
      * Load a matrix
