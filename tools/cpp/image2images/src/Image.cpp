@@ -68,7 +68,7 @@ void Image::cleanNoise() {
             }
         }
 
-        // Delete everything after index 3
+        // Delete everything after index
         for(size_t i=index; i < pairs.size(); i++) {
             cv::drawContours(*m_mat, m_contours, (int) pairs[i].first, 0, CV_FILLED);
         }
