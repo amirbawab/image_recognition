@@ -2,6 +2,7 @@
 #include <iostream>
 
 #define NUM_OBJECTS 3
+#define MIN_OBJECT_AREA 30
 #define ALIGN_ROWS 70
 #define ALIGN_COLS 100
 #define SPLIT_ROWS 50
@@ -59,12 +60,16 @@ void Image::cleanNoise() {
 
         // Store new contour
         std::vector< std::vector<cv::Point>> keepContours;
+        size_t index = 0;
         for(size_t i=0; i < NUM_OBJECTS; i++) {
-            keepContours.push_back(m_contours[pairs[i].first]);
+            if(pairs[i].second >= MIN_OBJECT_AREA) {
+                keepContours.push_back(m_contours[pairs[i].first]);
+                index++;
+            }
         }
 
         // Delete everything after index 3
-        for(size_t i=NUM_OBJECTS; i < pairs.size(); i++) {
+        for(size_t i=index; i < pairs.size(); i++) {
             cv::drawContours(*m_mat, m_contours, (int) pairs[i].first, 0, CV_FILLED);
         }
 
