@@ -7,7 +7,7 @@
 
 #define NO_VALUE 777
 
-class Image{
+class Image : public std::enable_shared_from_this<Image>{
 private:
     static long m_uniq_id;
 
@@ -126,4 +126,13 @@ public:
      * @param angle
      */
     void rotate(int angle);
+
+    /**
+     * Method that would manipulate MNIST
+     * dataset.
+     * NOTE: Do not use this function
+     * if the input is not the MNIST dataset
+     * @return
+     */
+    std::vector<std::shared_ptr<Image>> mnist();
 };
