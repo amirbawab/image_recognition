@@ -243,3 +243,28 @@ void Image::rotate(int angle) {
     rot.at<double>(1,2) += bbox.height/2.0 - center.y;
     cv::warpAffine(*m_mat, *m_mat, rot, bbox.size());
 }
+
+std::vector<std::shared_ptr<Image>> Image::mnist() {
+    // Prepare mnist vector
+    std::vector<std::shared_ptr<Image>> mnistVector;
+    mnistVector.push_back(shared_from_this());
+
+    // Prepare the new images
+    std::shared_ptr<cv::Mat> leftRotMat = std::make_shared<cv::Mat>(m_mat->rows, m_mat->cols, m_mat->type());
+    std::shared_ptr<cv::Mat> rightRotMat = std::make_shared<cv::Mat>(m_mat->rows, m_mat->cols, m_mat->type());
+    m_mat->copyTo(*leftRotMat);
+    m_mat->copyTo(*rightRotMat);
+    mnistVector.push_back(std::make_shared<Image>(leftRotMat, m_value));
+    mnistVector.push_back(std::make_shared<Image>(rightRotMat, m_value));
+
+    // Manipulate images
+    cv::Point2f src_center(mnistVector[0]->getMat()->cols/2.0F, mnistVector[0]->getMat()->rows/2.0F);
+    cv::Mat LRot = getRotationMatrix2D(src_center, -45, 1.0);
+    cv::Mat RRot = getRotationMatrix2D(src_center, 45, 1.0);
+
+    // Apply rotation
+    warpAffine(*mnistVector[0]->getMat(), *mnistVector[0]->getMat(), LRot, mnistVector[0]->getMat()->size());
+    warpAffine(*mnistVector[1]->getMat(), *mnistVector[1]->getMat(), RRot, mnistVector[1]->getMat()->size());
+
+    return mnistVector;
+}

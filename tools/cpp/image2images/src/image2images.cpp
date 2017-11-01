@@ -28,6 +28,7 @@ const std::string ALGO_DETECT =         "detect";
 const std::string ALGO_ALIGN =          "align";
 const std::string ALGO_SPLIT =          "split";
 const std::string ALGO_ROTATE =         "rotate";
+const std::string ALGO_MNIST =          "mnist";
 
 /**
  * Print program usage to stdout
@@ -46,6 +47,7 @@ void printUsage() {
             << "                     - " << ALGO_ALIGN << ": Align detected elements in image" << std::endl
             << "                     - " << ALGO_SPLIT << ": Generate an image per detected element" << std::endl
             << "                     - " << ALGO_ROTATE << "{1..360}: Rotate images by the provided angle" << std::endl
+            << "                     - " << ALGO_MNIST << ": Algorithm optimized for MNIST dataset" << std::endl
             << "    -o, --output     Output directory" << std::endl
             << "    -m, --matrix     Output as matrix instead of image" << std::endl
             << "    -l, --label      Label file" << std::endl
@@ -209,9 +211,16 @@ int main( int argc, char** argv ) {
                 }
                 outputImages = manipOutputImages;
             } else if(algo == ALGO_CONTOUR) {
-                for(auto outputImage : outputImages) {
+                for (auto outputImage : outputImages) {
                     outputImage->contour();
                 }
+            } else if(algo == ALGO_MNIST){
+                std::vector<std::shared_ptr<Image>> manipOutputImages;
+                for (auto outputImage : outputImages) {
+                    std::vector<std::shared_ptr<Image>> mnist = outputImage->mnist();
+                    manipOutputImages.insert(manipOutputImages.end(), mnist.begin(), mnist.end());
+                }
+                outputImages = manipOutputImages;
             } else {
                 std::cerr << "Algorithm " << algo << " not found!" << std::endl;
             }
