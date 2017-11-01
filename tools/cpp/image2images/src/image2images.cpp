@@ -27,6 +27,8 @@ const std::string ALGO_CONTOUR =        "contour";
 const std::string ALGO_DETECT =         "detect";
 const std::string ALGO_ALIGN =          "align";
 const std::string ALGO_SPLIT =          "split";
+const std::string ALGO_ROTATE_P45 =     "rotate+45";
+const std::string ALGO_ROTATE_N45 =     "rotate-45";
 
 /**
  * Print program usage to stdout
@@ -189,6 +191,14 @@ int main( int argc, char** argv ) {
                     }
                 }
                 outputImages = manipOutputImages;
+            } else if(algo == ALGO_ROTATE_P45) {
+                for (auto outputImage : outputImages) {
+                    outputImage->rotate(45);
+                }
+            } else if(algo == ALGO_ROTATE_N45) {
+                for (auto outputImage : outputImages) {
+                    outputImage->rotate(-45);
+                }
             } else if(algo == ALGO_SPLIT) {
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for(auto outputImage : outputImages) {

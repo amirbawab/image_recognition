@@ -105,4 +105,10 @@ public:
      * @return unique image id
      */
     long getId() const { return m_id;}
+
+    /**
+     * Rotate matrix
+     * @param angle
+     */
+    void rotate(int angle);
 };

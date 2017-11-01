@@ -192,3 +192,12 @@ std::vector<std::shared_ptr<Image>> Image::split() {
 void Image::wait() {
     cv::waitKey(0);
 }
+
+void Image::rotate(int angle) {
+    cv::Point2f center(m_mat->cols/2.0f, m_mat->rows/2.0f);
+    cv::Mat rot = cv::getRotationMatrix2D(center, angle, 1.0);
+    cv::Rect bbox = cv::RotatedRect(center,m_mat->size(), angle).boundingRect();
+    rot.at<double>(0,2) += bbox.width/2.0 - center.x;
+    rot.at<double>(1,2) += bbox.height/2.0 - center.y;
+    cv::warpAffine(*m_mat, *m_mat, rot, bbox.size());
+}
