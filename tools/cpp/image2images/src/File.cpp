@@ -2,10 +2,11 @@
 #include <iostream>
 
 std::shared_ptr<Image> File::loadImage() {
-    std::shared_ptr<cv::Mat> out = std::make_shared<cv::Mat>(ROWS, COLS, CV_8UC1);
+    std::shared_ptr<cv::Mat> out = std::make_shared<cv::Mat>(m_imgRows, m_imgCols, CV_8UC1);
     int row = 0;
     int col = 0;
-    for(int i=0; i < PIXLES; i++) {
+    int pixels = m_imgRows * m_imgCols;
+    for(int i=0; i < pixels; i++) {
 
         // Load input from file
         double val;
@@ -13,7 +14,7 @@ std::shared_ptr<Image> File::loadImage() {
 
         // Update pixel
         out->at<uchar>(row, col) = (uchar)(255 - val);
-        if(++col == COLS) {
+        if(++col == m_imgCols) {
             row++;
             col = 0;
         }
@@ -37,7 +38,8 @@ std::shared_ptr<Image> File::loadImage() {
 
 void File::skipMat() {
     double ignore;
-    for(int i=0; i < PIXLES; i++) {
+    int pixels = m_imgRows * m_imgCols;
+    for(int i=0; i < pixels; i++) {
         m_input >> ignore;
     }
 

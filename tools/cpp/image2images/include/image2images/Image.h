@@ -17,11 +17,6 @@ private:
     long m_id = m_uniq_id++;
 
     /**
-     * Deskew objects
-     */
-    void _deskew(cv::Mat &mat);
-
-    /**
      * Generate matrix permutatios
      * @param images
      * @param indices
@@ -50,6 +45,11 @@ private:
      * @return average
      */
     double _averagePixelVal();
+
+    /**
+     * Apply MNIST manipulations
+     */
+    void _mnist();
 public:
     Image(std::shared_ptr<cv::Mat> mat = nullptr, int value = NO_VALUE) : m_mat(mat), m_value(value){}
 
@@ -125,7 +125,7 @@ public:
      * Rotate matrix
      * @param angle
      */
-    void rotate(int angle);
+    std::shared_ptr<Image> rotate(int angle);
 
     /**
      * Method that would manipulate MNIST
@@ -135,4 +135,10 @@ public:
      * @return
      */
     std::vector<std::shared_ptr<Image>> mnist();
+
+    /**
+     * Deep clone image
+     * @return image pointer
+     */
+    std::shared_ptr<Image> clone();
 };
