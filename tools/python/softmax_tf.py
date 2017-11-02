@@ -1,13 +1,16 @@
 import tensorflow as tf
 import numpy as np
+import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 
 #Loading data
 file_x = "x.csv"
 file_y = "y.csv"
+file_t = "test.csv"
 
 tx= np.genfromtxt(file_x, delimiter=',')
 ty= np.genfromtxt(file_y, delimiter=',')
+test= np.genfromtxt(file_t, delimiter=',')
 
 #Split train and test
 ind = int( tx.shape[0]/5*4 )
@@ -19,17 +22,13 @@ tx = tx[:ind]
 ty = ty[:ind]
 ty = ty.reshape(ty.shape[0], 1)
 
-
-#tx = tf.convert_to_tensor(train_x, dtype = tf.float32)
-#ty = tf.convert_to_tensor(train_y, dtype = tf.float32)
-
 print("Finished loading data")
 
 #Define params:
 nb_classes = 40
 learn_rate = 0.001
-BATCH_SIZE = 128
-epoch = 10000
+BATCH_SIZE = 256
+epoch = 30000
 log_file = "/tmp/mini_Softmax1.log"
 data_size = ty.shape[0]
 
@@ -43,10 +42,6 @@ test_y = enc.transform(test_y)
 ty = ty.toarray()
 test_y = test_y.toarray()
 
-print(test_y.shape)
-print(ty.shape)
-
-print(ty[:10])
 
 #Define tensorflow variables
 x = tf.placeholder(tf.float32, [None, 4096])     #here none means it can hold any rows. 
@@ -113,28 +108,15 @@ for i in range(epoch):
 correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
 #Calculate accuracy
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-feed = { x : test_x , y: test_y  }
+feed = { x : test_x , y_: test_y  }
 print(sess.run(accuracy, feed_dict=feed))
 
 
-'''
-print("Trying batch")
-#Prepare batches
-BATCH_SIZE = 128
-capacity = 10*BATCH_SIZE
+prediction = tf.argmax(y,1)
+best = sess.run(prediction, feed_dict = { x: test })
 
-coord = tf.train.Coordinator()
-threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
-[batch_xs, batch_ys] = tf.train.batch([tx, ty], batch_size = BATCH_SIZE, capacity = capacity, enqueue_many=True)
-print("Trying to run batch")
-sess.run([batch_xs, batch_ys])
-print(batch_ys)
+#Write to prediction file
+pred = pd.DataFrame(data=best)
+pred.to_csv("Softmax_pred.csv", sep=',', index=False, encoding='utf-8')
 
-for _ in range(2):
-    [batch_xs, batch_ys] = tf.train.batch([tx, ty], batch_size = BATCH_SIZE, capacity = capacity, enqueue_many=True)
-    sess.run([batch_xs, batch_ys])
-    print(batch_ys)
-    coord.join(threads)
-    sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
-'''
