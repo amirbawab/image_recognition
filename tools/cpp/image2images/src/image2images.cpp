@@ -260,7 +260,7 @@ int main( int argc, char** argv ) {
         if(!g_outputDir.empty()) {
             for(auto outputImage : outputImages) {
                 std::stringstream fileName;
-                fileName << g_outputDir << "/" << outputImage->getValue() << "/" << progress << "_"
+                fileName << g_outputDir << "/" << outputImage->getValue() << "/" << progress+1 << "_"
                          << outputImage->getId();
                 if(!g_matrix) {
                     fileName << ".tiff";

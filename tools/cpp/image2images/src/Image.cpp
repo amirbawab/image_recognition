@@ -72,7 +72,16 @@ std::shared_ptr<Image> Image::align() {
     for(int i=0; i < m_contours.size(); i++) {
         indices.push_back(i);
     }
-    return _buildImage(ALIGN_ROWS, ALIGN_COLS, indices);
+
+    std::shared_ptr<Image> alignedImage = _buildImage(ALIGN_ROWS, ALIGN_COLS, indices);
+
+    // FIXME Right now if aligning the images is not possible, then we return a solid black image
+    if(!alignedImage) {
+        alignedImage = clone();
+        alignedImage->m_mat = std::make_shared<cv::Mat>(ALIGN_ROWS, ALIGN_COLS, m_mat->type());
+        alignedImage->m_mat->setTo(cv::Scalar(0));
+    }
+    return alignedImage;
 }
 
 void Image::cleanNoise() {
@@ -140,6 +149,7 @@ std::shared_ptr<Image> Image::_buildImage(int rows, int cols, const std::vector<
 
     // Construct and initialize a new mat
     std::shared_ptr<Image> image = clone();
+    image->m_mat = std::make_shared<cv::Mat>(rows, cols, m_mat->type());
     image->getMat()->setTo(cv::Scalar(0));
 
     // Start populating the new matrix
