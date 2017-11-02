@@ -50,6 +50,12 @@ private:
      * Apply MNIST manipulations
      */
     void _mnist();
+
+    /**
+     * Reduce image to K colors
+     * @param K
+     */
+    void _reduceColors(int K);
 public:
     Image(std::shared_ptr<cv::Mat> mat = nullptr, int value = NO_VALUE) : m_mat(mat), m_value(value){}
 
