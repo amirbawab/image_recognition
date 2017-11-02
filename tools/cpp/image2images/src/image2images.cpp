@@ -19,11 +19,15 @@ std::vector<std::string> g_algos;
 std::string g_inputFile;
 std::string g_outputDir;
 std::string g_labelFile;
+std::string g_knnFile;
 int g_number = 1;
 int g_offset = 0;
 bool g_display = false;
 bool g_matrix = false;
 bool g_mnist = false;
+
+// Learning vars
+cv::Ptr<cv::ml::KNearest> l_knn;
 
 // Algorithms
 const std::string ALGO_BINARY =         "binary";
@@ -36,7 +40,7 @@ const std::string ALGO_SPLIT =          "split";
 const std::string ALGO_ROTATE =         "rotate";
 const std::string ALGO_MNIST =          "mnist";
 const std::string ALGO_SCALE =          "scale";
-const std::string ALGO_RECOGNIZE =      "recognize";
+const std::string ALGO_FINDKNN =       "findKNN";
 
 /**
  * Print program usage to stdout
@@ -58,13 +62,14 @@ void printUsage() {
             << "                     - " << ALGO_ROTATE << "{1..360}: Rotate images by the provided angle" << std::endl
             << "                     - " << ALGO_MNIST << ": Algorithm optimized for MNIST dataset" << std::endl
             << "                     - " << ALGO_SCALE << "{1..N}: Scale image" << std::endl
-            << "                     - " << ALGO_RECOGNIZE << ": Recognize image" << std::endl
+            << "                     - " << ALGO_FINDKNN << ": Recognize image using kNN" << std::endl
             << "    -o, --output     Output directory" << std::endl
             << "    -m, --matrix     Output as matrix instead of image" << std::endl
             << "    -l, --label      Label file" << std::endl
             << "    -d, --display    Show images in windows" << std::endl
             << "    -s, --offset     Offset/Starting image" << std::endl
             << "    -n, --number     Number of images to show" << std::endl
+            << "    -k, --knn        Path for the kNN file" << std::endl
             << "    -h, --help       Display this help message" << std::endl;
 }
 
@@ -84,13 +89,14 @@ void initParams(int argc, char *argv[]) {
             {"label", required_argument, 0, 'l'},
             {"display",   no_argument,       0, 'd'},
             {"matrix",   no_argument,       0, 'm'},
+            {"knn",   required_argument,       0, 'k'},
             {"help",   no_argument,       0, 'h'},
             {0, 0,                        0, 0}
     };
 
     int optionIndex = 0;
     int c;
-    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dmMl:", longOptions, &optionIndex)) != -1) {
+    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dmMl:k:", longOptions, &optionIndex)) != -1) {
         switch (c) {
             case 'i':
                 g_inputFile = optarg;
@@ -119,6 +125,9 @@ void initParams(int argc, char *argv[]) {
             case 'M':
                 g_mnist = true;
                 break;
+            case 'k':
+                g_knnFile = optarg;
+                break;
             case 'h':
             default:
                 break;
@@ -134,6 +143,25 @@ int main( int argc, char** argv ) {
     if(g_inputFile.empty()) {
         printUsage();
         return 0;
+    }
+
+    // Train kNN
+    if(!g_knnFile.empty()) {
+
+        // TODO This should be promoted to a new class 'Learner.cpp'
+        // Create and configure kNN
+        l_knn = cv::ml::KNearest::create();
+        l_knn->setIsClassifier(true);
+        l_knn->setAlgorithmType(cv::ml::KNearest::Types::BRUTE_FORCE);
+        l_knn->setDefaultK(1);
+
+        // Extract features
+        cv::Mat trainSamples, trainLabels;
+        cv::Ptr<cv::ml::TrainData> trainData = cv::ml::TrainData::create(
+                trainSamples, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
+
+        // Train kNN
+        l_knn->train(trainData);
     }
 
     // Check if input file was found
@@ -253,9 +281,9 @@ int main( int argc, char** argv ) {
                     manipOutputImages.push_back(scaledImage);
                 }
                 outputImages = manipOutputImages;
-            } else if(algo == ALGO_RECOGNIZE) {
+            } else if(algo == ALGO_FINDKNN) {
                 for (auto outputImage : outputImages) {
-                    std::string word = outputImage->recognize();
+                    std::string word = outputImage->recognize(l_knn);
                     std::cout << "Image ID: " << outputImage->getId() << " >> " << word << std::endl;
                 }
             } else {

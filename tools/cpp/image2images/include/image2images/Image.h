@@ -2,10 +2,16 @@
 
 #include <memory>
 #include <vector>
+#include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 #define NO_VALUE 777
+
+struct charMatch {
+    cv::Point2i position;
+    cv::Mat image;
+};
 
 class Image : public std::enable_shared_from_this<Image>{
 private:
@@ -14,6 +20,7 @@ private:
     std::string m_name;
     std::shared_ptr<cv::Mat> m_mat;
     std::vector<std::vector<cv::Point>> m_contours;
+    cv::Ptr<cv::ml::KNearest> m_knn;
     int m_value;
     long m_id = m_uniq_id++;
 
@@ -170,7 +177,14 @@ public:
 
     /**
      * Recognize images
+     * @param kNN
      * @return recognize images
      */
-    std::string recognize();
+    std::string recognize(cv::Ptr<cv::ml::KNearest> kNN);
+
+    /**
+     * Extract characters
+     * @return vector of matched chars
+     */
+    std::vector<charMatch> extractChars();
 };
