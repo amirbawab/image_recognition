@@ -253,17 +253,28 @@ int main( int argc, char** argv ) {
                     manipOutputImages.push_back(scaledImage);
                 }
                 outputImages = manipOutputImages;
+            } else if(algo == ALGO_RECOGNIZE) {
+                for (auto outputImage : outputImages) {
+                    std::string word = outputImage->recognize();
+                    std::cout << "Image ID: " << outputImage->getId() << " >> " << word << std::endl;
+                }
             } else {
                 std::cerr << "Algorithm " << algo << " not found!" << std::endl;
             }
+        }
+
+        // Generate names
+        for(auto outputImage : outputImages) {
+            std::stringstream name;
+            name << progress+1 << "_" << outputImage->getId();
+            outputImage->setName(name.str());
         }
 
         // Generate output
         if(!g_outputDir.empty()) {
             for(auto outputImage : outputImages) {
                 std::stringstream fileName;
-                fileName << g_outputDir << "/" << outputImage->getValue() << "/" << progress+1 << "_"
-                         << outputImage->getId();
+                fileName << g_outputDir << "/" << outputImage->getValue() << "/" << outputImage->getName();
                 if(!g_matrix) {
                     fileName << ".tiff";
                     std::cout << ">> Generating image: " << fileName.str() << std::endl;
@@ -294,9 +305,6 @@ int main( int argc, char** argv ) {
         // Display output images
         if(g_display) {
             for(auto outputImage : outputImages) {
-                std::stringstream name;
-                name << progress+1 << "_" << outputImage->getId();
-                outputImage->setName(name.str());
                 std::cout << ">> Displaying image id: " << outputImage->getName() << std::endl;
                 outputImage->display();
                 windowOpen = true;
