@@ -43,7 +43,7 @@ double Image::_averagePixelVal() {
 }
 
 std::shared_ptr<Image> Image::binarize(int threshold) {
-    std::shared_ptr<Image> binImage = std::make_shared<Image>();
+    std::shared_ptr<Image> binImage = clone();
 
     // Average pixel threshold
     const int AVG_THERSHOLD = 50;
@@ -59,7 +59,6 @@ std::shared_ptr<Image> Image::binarize(int threshold) {
     } else {
         _binarize(binImage, threshold);
     }
-    binImage->m_value = m_value;
     return binImage;
 }
 
@@ -140,11 +139,8 @@ std::shared_ptr<Image> Image::_buildImage(int rows, int cols, const std::vector<
     int padding = 3;
 
     // Construct and initialize a new mat
-    std::shared_ptr<cv::Mat> mat = std::make_shared<cv::Mat>(rows, cols, m_mat->type());
-    mat->setTo(cv::Scalar(0));
-
-    // Construct image
-    std::shared_ptr<Image> image = std::make_shared<Image>(mat);
+    std::shared_ptr<Image> image = clone();
+    image->getMat()->setTo(cv::Scalar(0));
 
     // Start populating the new matrix
     int leftOffset = 0;
@@ -158,27 +154,20 @@ std::shared_ptr<Image> Image::_buildImage(int rows, int cols, const std::vector<
         cv::Rect brect = cv::boundingRect(cv::Mat(m_contours[indices[i]]).reshape(2));
         cv::Mat elementMat = ((*m_mat)(cv::Rect(brect.tl(), brect.br())));
 
-        // Deskew element
-        // FIXME Experimental
-//        _deskew(elementMat);
-
         // Verify that the new image fits the matrix
         // This maximizes the number of potential well
         // formed images
-        if(leftOffset + brect.width >= mat->cols || topOffset + brect.height >= mat->rows) {
+        if(leftOffset + brect.width >= image->getMat()->cols || topOffset + brect.height >= image->getMat()->rows) {
             return nullptr;
         }
 
         // Draw element on new matrix
         elementMat(cv::Rect(0,0,brect.width, brect.height)).copyTo(
-                (*mat)(cv::Rect(leftOffset, padding, brect.width, brect.height)));
+                (*image->getMat())(cv::Rect(leftOffset, padding, brect.width, brect.height)));
 
         // Update left offset
         leftOffset += brect.width + padding;
     }
-
-    // Update value
-    image->m_value = m_value;
     return image;
 }
 
@@ -206,19 +195,6 @@ std::vector<std::shared_ptr<Image>> Image::permutation() {
     return perImages;
 }
 
-void Image::_deskew(cv::Mat &mat){
-    int SZ = 20;
-    int affineFlags = cv::WARP_INVERSE_MAP | cv::INTER_LINEAR;
-    cv::Moments m = cv::moments(*m_mat);
-    if(abs(m.mu02) < 1e-2) {
-        return;
-    }
-    double skew = m.mu11/m.mu02;
-    cv::Mat_<float> warpMat(2,3);
-    warpMat << 1, skew, -0.5*SZ*skew, 0, 1, 0;
-    warpAffine(mat, mat, warpMat, m_mat->size(), affineFlags);
-}
-
 std::vector<std::shared_ptr<Image>> Image::split() {
     std::vector<std::shared_ptr<Image>> splitImages;
     for(int i=0; i < m_contours.size(); i++) {
@@ -235,43 +211,38 @@ void Image::wait() {
     cv::waitKey(0);
 }
 
-void Image::rotate(int angle) {
-    cv::Point2f center(m_mat->cols/2.0f, m_mat->rows/2.0f);
-    cv::Mat rot = cv::getRotationMatrix2D(center, angle, 1.0);
-    cv::Rect bbox = cv::RotatedRect(center,m_mat->size(), angle).boundingRect();
-    rot.at<double>(0,2) += bbox.width/2.0 - center.x;
-    rot.at<double>(1,2) += bbox.height/2.0 - center.y;
-    cv::warpAffine(*m_mat, *m_mat, rot, bbox.size());
+std::shared_ptr<Image> Image::rotate(int angle) {
+    std::shared_ptr<Image> rotImage = clone();
+    cv::Point2f src_center(rotImage->getMat()->cols/2.0F, rotImage->getMat()->rows/2.0F);
+    cv::Mat rotMat = getRotationMatrix2D(src_center, angle, 1.0);
+    cv::warpAffine(*rotImage->getMat(), *rotImage->getMat(), rotMat, rotImage->getMat()->size());
+    return rotImage;
 }
 
 std::vector<std::shared_ptr<Image>> Image::mnist() {
-    // Copy matrix to a larger one
-    std::shared_ptr<cv::Mat> largerMat = std::make_shared<cv::Mat>(SPLIT_ROWS, SPLIT_COLS, m_mat->type());
-    largerMat->setTo(cv::Scalar(0));
-    cv::Rect roi( cv::Point(10, 10), m_mat->size() );
-    m_mat->copyTo((*largerMat)(roi));
-    m_mat = largerMat;
-
     // Prepare mnist vector
     std::vector<std::shared_ptr<Image>> mnistVector;
     mnistVector.push_back(shared_from_this());
 
-    // Prepare the new images
-    std::shared_ptr<cv::Mat> leftRotMat = std::make_shared<cv::Mat>(m_mat->rows, m_mat->cols, m_mat->type());
-    std::shared_ptr<cv::Mat> rightRotMat = std::make_shared<cv::Mat>(m_mat->rows, m_mat->cols, m_mat->type());
-    m_mat->copyTo(*leftRotMat);
-    m_mat->copyTo(*rightRotMat);
-    mnistVector.push_back(std::make_shared<Image>(leftRotMat, m_value));
-    mnistVector.push_back(std::make_shared<Image>(rightRotMat, m_value));
+    // Invert colors
+    cv::bitwise_not (*m_mat, *m_mat);
 
-    // Manipulate images
-    cv::Point2f src_center(mnistVector[0]->getMat()->cols/2.0F, mnistVector[0]->getMat()->rows/2.0F);
-    cv::Mat LRot = getRotationMatrix2D(src_center, -45, 1.0);
-    cv::Mat RRot = getRotationMatrix2D(src_center, 45, 1.0);
+    // Copy matrix to a larger one
+    cv::copyMakeBorder(*m_mat, *m_mat, 11,11,11,11, cv::BORDER_CONSTANT, cv::Scalar(0)); // 28x28 -> 50x50
 
-    // Apply rotation
-    warpAffine(*mnistVector[0]->getMat(), *mnistVector[0]->getMat(), LRot, mnistVector[0]->getMat()->size());
-    warpAffine(*mnistVector[1]->getMat(), *mnistVector[1]->getMat(), RRot, mnistVector[1]->getMat()->size());
+    // Rotate images
+    std::shared_ptr<Image> LRImage = rotate(45);
+    std::shared_ptr<Image> RRImage = rotate(-45);
 
+    // Add new images
+    mnistVector.push_back(LRImage);
+    mnistVector.push_back(RRImage);
     return mnistVector;
+}
+
+std::shared_ptr<Image> Image::clone() {
+    std::shared_ptr<cv::Mat> mat = std::make_shared<cv::Mat>(m_mat->rows, m_mat->cols, m_mat->type());
+    m_mat->copyTo(*mat);
+    std::shared_ptr<Image> image = std::make_shared<Image>(mat, m_value);
+    return image;
 }

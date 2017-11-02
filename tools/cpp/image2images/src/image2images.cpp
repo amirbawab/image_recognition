@@ -217,9 +217,12 @@ int main( int argc, char** argv ) {
                 outputImages = manipOutputImages;
             } else if(algo.rfind(ALGO_ROTATE, 0) == 0 && algo.size() > ALGO_ROTATE.size()) {
                 int val = atoi(algo.substr(ALGO_ROTATE.size(), algo.size() - ALGO_ROTATE.size()).c_str());
+                std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for (auto outputImage : outputImages) {
-                    outputImage->rotate(val);
+                    std::shared_ptr<Image> rotImage = outputImage->rotate(val);
+                    manipOutputImages.push_back(rotImage);
                 }
+                outputImages = manipOutputImages;
             } else if(algo == ALGO_SPLIT) {
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for(auto outputImage : outputImages) {
