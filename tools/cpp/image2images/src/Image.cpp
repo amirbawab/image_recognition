@@ -298,18 +298,18 @@ std::vector<charMatch> Image::extractChars() {
 
     for (int i(0); i < contours.size(); ++i) {
         cv::Rect bounding_box(cv::boundingRect(contours[i]));
-        int bb_area(bounding_box.area());
-            int PADDING(2);
-            bounding_box.x -= PADDING;
-            bounding_box.y -= PADDING;
-            bounding_box.width += PADDING * 2;
-            bounding_box.height += PADDING * 2;
+        std::cout << "Here" << std::endl;
+//        int PADDING(2);
+//        bounding_box.x -= PADDING;
+//        bounding_box.y -= PADDING;
+//        bounding_box.width += PADDING * 2;
+//        bounding_box.height += PADDING * 2;
 
-            charMatch match;
-            cv::Point2i center(bounding_box.x + bounding_box.width / 2, bounding_box.y + bounding_box.height / 2);
-            match.position = center;
-            match.image = (*m_mat)(bounding_box);
-            result.push_back(match);
+        charMatch match;
+        cv::Point2i center(bounding_box.x + bounding_box.width / 2, bounding_box.y + bounding_box.height / 2);
+        match.position = center;
+        match.image = (*m_mat)(bounding_box);
+        result.push_back(match);
     }
 
     std::sort(begin(result), end(result), [](charMatch const& a, charMatch const& b) -> bool {
@@ -321,7 +321,7 @@ std::vector<charMatch> Image::extractChars() {
 
 std::string Image::recognize(cv::Ptr<cv::ml::KNearest> kNN) {
     std::string result;
-    if(m_knn && m_knn->isTrained()) {
+    if(kNN && kNN->isTrained()) {
         std::vector<charMatch> characters(extractChars());
         for (charMatch const& match : characters) {
             cv::Mat small_char;
@@ -333,7 +333,7 @@ std::string Image::recognize(cv::Ptr<cv::ml::KNearest> kNN) {
             cv::Mat small_char_linear(small_char_float.reshape(1, 1));
 
             cv::Mat response, distance;
-            float p = m_knn->findNearest(small_char_linear, kNN->getDefaultK(), cv::noArray(), response, distance);
+            float p = kNN->findNearest(small_char_linear, kNN->getDefaultK(), cv::noArray(), response, distance);
 //        std::cout << response << std::endl;
 //        std::cout << distance << std::endl;
 

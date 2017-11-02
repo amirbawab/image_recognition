@@ -135,6 +135,19 @@ void initParams(int argc, char *argv[]) {
     }
 }
 
+// FIXME Move this function to another file
+std::pair<float, cv::Mat> trainImage(char c, cv::Mat const& img) {
+    cv::Mat small_char;
+    cv::resize(img, small_char, cv::Size(10, 10), 0, 0, cv::INTER_LINEAR);
+
+    cv::Mat small_char_float;
+    small_char.convertTo(small_char_float, CV_32FC1);
+
+    cv::Mat small_char_linear(small_char_float.reshape(1, 1));
+
+    return std::pair<float, cv::Mat>(static_cast<float>(c), small_char_linear);
+}
+
 int main( int argc, char** argv ) {
     // Initialize parameters
     initParams(argc, argv);
@@ -148,20 +161,52 @@ int main( int argc, char** argv ) {
     // Train kNN
     if(!g_knnFile.empty()) {
 
-        // TODO This should be promoted to a new class 'Learner.cpp'
-        // Create and configure kNN
-        l_knn = cv::ml::KNearest::create();
-        l_knn->setIsClassifier(true);
-        l_knn->setAlgorithmType(cv::ml::KNearest::Types::BRUTE_FORCE);
-        l_knn->setDefaultK(1);
-
-        // Extract features
-        cv::Mat trainSamples, trainLabels;
-        cv::Ptr<cv::ml::TrainData> trainData = cv::ml::TrainData::create(
-                trainSamples, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
-
         // Train kNN
-        l_knn->train(trainData);
+        std::ifstream knnInput(g_knnFile);
+        if(knnInput.is_open()) {
+
+            // TODO This should be promoted to a new class 'Learner.cpp'
+            // Create and configure kNN
+            l_knn = cv::ml::KNearest::create();
+            l_knn->setIsClassifier(true);
+            l_knn->setAlgorithmType(cv::ml::KNearest::Types::BRUTE_FORCE);
+            l_knn->setDefaultK(4);
+
+            // Extract features
+            cv::Mat trainSamples, trainLabels;
+
+            std::cout << ">> Loading training images ..." << std::endl;
+            int total = 60000;
+            while(total-- > 0) {
+                cv::Mat char_img(28, 28, CV_8UC1);
+                char label;
+                knnInput >> label;
+                for(int row=0; row < 28; row++) {
+                    for(int col=0; col < 28; col++) {
+                        int val;
+                        knnInput >> val;
+                        char_img.at<uchar>(row, col) = (uchar)val;
+                    }
+                }
+                std::pair<float, cv::Mat> tinfo = trainImage(label, char_img);
+                trainLabels.push_back(tinfo.first);
+                trainSamples.push_back(tinfo.second);
+            }
+
+            // Convert to train data
+            cv::Ptr<cv::ml::TrainData> trainData = cv::ml::TrainData::create(
+                    trainSamples, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
+
+            // Train kNN
+            std::cout << ">> Started training kNN ..." << std::endl;
+            l_knn->train(trainData);
+            if(l_knn->isTrained()) {
+                std::cout << ">> kNN Trained!" << std::endl;
+            }
+
+        } else {
+            std::cerr << "Error opening kNN input file" << std::endl;
+        }
     }
 
     // Check if input file was found
@@ -186,7 +231,7 @@ int main( int argc, char** argv ) {
     // Create and store all images
     int count = 0;
     std::vector<std::shared_ptr<Image>> images;
-    std::cout << "Loading images ..." << std::endl;
+    std::cout << ">> Loading images ..." << std::endl;
     while (count < g_offset + g_number) {
         if(count < g_offset) {
             file.skipMat();
@@ -203,7 +248,7 @@ int main( int argc, char** argv ) {
     }
 
     // Adjust all images
-    std::cout << "Starting image processing ..." << std::endl;
+    std::cout << ">> Starting image processing ..." << std::endl;
     int progress = 0;
     bool windowOpen = false;
     for(std::shared_ptr<Image> image : images){

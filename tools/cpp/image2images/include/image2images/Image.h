@@ -20,7 +20,6 @@ private:
     std::string m_name;
     std::shared_ptr<cv::Mat> m_mat;
     std::vector<std::vector<cv::Point>> m_contours;
-    cv::Ptr<cv::ml::KNearest> m_knn;
     int m_value;
     long m_id = m_uniq_id++;
 
