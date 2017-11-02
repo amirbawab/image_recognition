@@ -13,7 +13,7 @@ long Image::m_uniq_id = 1;
 
 void Image::display() {
     std::stringstream winName;
-    winName << "Image " << m_id;
+    winName << "Image " << m_name << " # " << m_id;
     cv::namedWindow(winName.str(), cv::WINDOW_AUTOSIZE);
     cv::imshow(winName.str(), *m_mat);
 }
@@ -283,4 +283,8 @@ std::shared_ptr<Image> Image::scale(double val) {
     std::shared_ptr<Image> image = clone();
     cv::resize(*image->getMat(), *image->getMat(), cv::Size((int)(image->getMat()->rows*val), (int)(image->getMat()->cols*val)));
     return image;
+}
+
+std::string Image::recognize() {
+    return "";
 }

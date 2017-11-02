@@ -11,6 +11,7 @@ class Image : public std::enable_shared_from_this<Image>{
 private:
     static long m_uniq_id;
 
+    std::string m_name;
     std::shared_ptr<cv::Mat> m_mat;
     std::vector<std::vector<cv::Point>> m_contours;
     int m_value;
@@ -58,6 +59,18 @@ private:
     void _reduceColors(int K);
 public:
     Image(std::shared_ptr<cv::Mat> mat = nullptr, int value = NO_VALUE) : m_mat(mat), m_value(value){}
+
+    /**
+     * Set image name
+     * @param name
+     */
+    void setName(std::string name) { m_name = name;}
+
+    /**
+     * Get name
+     * @return image name
+     */
+    std::string getName() const { return m_name;}
 
     /**
      * Display image
@@ -154,4 +167,10 @@ public:
      * @return new image
      */
     std::shared_ptr<Image> scale(double val);
+
+    /**
+     * Recognize images
+     * @return recognize images
+     */
+    std::string recognize();
 };

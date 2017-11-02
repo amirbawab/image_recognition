@@ -36,6 +36,7 @@ const std::string ALGO_SPLIT =          "split";
 const std::string ALGO_ROTATE =         "rotate";
 const std::string ALGO_MNIST =          "mnist";
 const std::string ALGO_SCALE =          "scale";
+const std::string ALGO_RECOGNIZE =      "recognize";
 
 /**
  * Print program usage to stdout
@@ -57,6 +58,7 @@ void printUsage() {
             << "                     - " << ALGO_ROTATE << "{1..360}: Rotate images by the provided angle" << std::endl
             << "                     - " << ALGO_MNIST << ": Algorithm optimized for MNIST dataset" << std::endl
             << "                     - " << ALGO_SCALE << "{1..N}: Scale image" << std::endl
+            << "                     - " << ALGO_RECOGNIZE << ": Recognize image" << std::endl
             << "    -o, --output     Output directory" << std::endl
             << "    -m, --matrix     Output as matrix instead of image" << std::endl
             << "    -l, --label      Label file" << std::endl
@@ -292,7 +294,10 @@ int main( int argc, char** argv ) {
         // Display output images
         if(g_display) {
             for(auto outputImage : outputImages) {
-                std::cout << ">> Displaying image id: " << outputImage->getId() << std::endl;
+                std::stringstream name;
+                name << progress+1 << "_" << outputImage->getId();
+                outputImage->setName(name.str());
+                std::cout << ">> Displaying image id: " << outputImage->getName() << std::endl;
                 outputImage->display();
                 windowOpen = true;
             }
