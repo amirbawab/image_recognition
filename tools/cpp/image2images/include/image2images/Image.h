@@ -141,4 +141,11 @@ public:
      * @return image pointer
      */
     std::shared_ptr<Image> clone();
+
+    /**
+     * Scale image
+     * @param val
+     * @return new image
+     */
+    std::shared_ptr<Image> scale(double val);
 };

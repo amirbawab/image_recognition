@@ -246,3 +246,9 @@ std::shared_ptr<Image> Image::clone() {
     std::shared_ptr<Image> image = std::make_shared<Image>(mat, m_value);
     return image;
 }
+
+std::shared_ptr<Image> Image::scale(double val) {
+    std::shared_ptr<Image> image = clone();
+    cv::resize(*image->getMat(), *image->getMat(), cv::Size((int)(image->getMat()->rows*val), (int)(image->getMat()->cols*val)));
+    return image;
+}
