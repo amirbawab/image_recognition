@@ -253,7 +253,7 @@ int main( int argc, char** argv ) {
                 fileName << g_outputDir << "/" << outputImage->getValue() << "/" << progress << "_"
                          << outputImage->getId();
                 if(!g_matrix) {
-                    fileName << ".jpg";
+                    fileName << ".tiff";
                     std::cout << ">> Generating image: " << fileName.str() << std::endl;
                     if(!cv::imwrite(fileName.str(), *outputImage->getMat())) {
                         std::cerr << "Error generating image: " << fileName.str() << std::endl;
