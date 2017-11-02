@@ -5,6 +5,7 @@
 #include <image2images/File.h>
 #include <image2images/Image.h>
 #include <fstream>
+#include <image2images/Learner.h>
 
 #define DATA_ROWS 64
 #define DATA_COLS 64
@@ -26,8 +27,9 @@ bool g_display = false;
 bool g_matrix = false;
 bool g_mnist = false;
 
-// Learning vars
-cv::Ptr<cv::ml::KNearest> l_knn;
+// Learner variable
+Learner g_learner;
+
 
 // Algorithms
 const std::string ALGO_BINARY =         "binary";
@@ -136,17 +138,6 @@ void initParams(int argc, char *argv[]) {
 }
 
 // FIXME Move this function to another file
-std::pair<float, cv::Mat> trainImage(char c, cv::Mat const& img) {
-    cv::Mat small_char;
-    cv::resize(img, small_char, cv::Size(10, 10), 0, 0, cv::INTER_LINEAR);
-
-    cv::Mat small_char_float;
-    small_char.convertTo(small_char_float, CV_32FC1);
-
-    cv::Mat small_char_linear(small_char_float.reshape(1, 1));
-
-    return std::pair<float, cv::Mat>(static_cast<float>(c), small_char_linear);
-}
 
 int main( int argc, char** argv ) {
     // Initialize parameters
@@ -160,52 +151,11 @@ int main( int argc, char** argv ) {
 
     // Train kNN
     if(!g_knnFile.empty()) {
-
-        // Train kNN
-        std::ifstream knnInput(g_knnFile);
-        if(knnInput.is_open()) {
-
-            // TODO This should be promoted to a new class 'Learner.cpp'
-            // Create and configure kNN
-            l_knn = cv::ml::KNearest::create();
-            l_knn->setIsClassifier(true);
-            l_knn->setAlgorithmType(cv::ml::KNearest::Types::BRUTE_FORCE);
-            l_knn->setDefaultK(4);
-
-            // Extract features
-            cv::Mat trainSamples, trainLabels;
-
-            std::cout << ">> Loading training images ..." << std::endl;
-            int total = 60000;
-            while(total-- > 0) {
-                cv::Mat char_img(28, 28, CV_8UC1);
-                char label;
-                knnInput >> label;
-                for(int row=0; row < 28; row++) {
-                    for(int col=0; col < 28; col++) {
-                        int val;
-                        knnInput >> val;
-                        char_img.at<uchar>(row, col) = (uchar)val;
-                    }
-                }
-                std::pair<float, cv::Mat> tinfo = trainImage(label, char_img);
-                trainLabels.push_back(tinfo.first);
-                trainSamples.push_back(tinfo.second);
-            }
-
-            // Convert to train data
-            cv::Ptr<cv::ml::TrainData> trainData = cv::ml::TrainData::create(
-                    trainSamples, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
-
-            // Train kNN
-            std::cout << ">> Started training kNN ..." << std::endl;
-            l_knn->train(trainData);
-            if(l_knn->isTrained()) {
-                std::cout << ">> kNN Trained!" << std::endl;
-            }
-
+        g_learner.initKNN();
+        if(g_learner.trainKNN(g_inputFile)) {
+            std::cout << ">> Training kNN completed!" << std::endl;
         } else {
-            std::cerr << "Error opening kNN input file" << std::endl;
+            std::cerr << "Error training kNN" << std::endl;
         }
     }
 
@@ -328,7 +278,7 @@ int main( int argc, char** argv ) {
                 outputImages = manipOutputImages;
             } else if(algo == ALGO_FINDKNN) {
                 for (auto outputImage : outputImages) {
-                    std::string word = outputImage->recognize(l_knn);
+                    std::string word = outputImage->recognize(g_learner.getKnn());
                     std::cout << "Image ID: " << outputImage->getId() << " >> " << word << std::endl;
                 }
             } else {

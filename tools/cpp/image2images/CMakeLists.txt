@@ -4,7 +4,7 @@ project(image2images)
 include_directories(include)
 
 # Add exectuable
-add_executable(${PROJECT_NAME} src/Image.cpp src/File.cpp src/image2images.cpp)
+add_executable(${PROJECT_NAME} src/Image.cpp src/File.cpp src/Learner.cpp src/image2images.cpp)
 
 # Add opencv
 find_package( OpenCV REQUIRED )
