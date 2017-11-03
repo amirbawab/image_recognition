@@ -8,11 +8,11 @@ void Learner::initKNN() {
     m_knn->setDefaultK(4);
 }
 
-std::pair<float, cv::Mat> Learner::_trainImage(char c, cv::Mat const& img) {
+std::pair<float, cv::Mat> Learner::_prepareImage(std::shared_ptr<Image> image) {
 
     // Make the image smaller
     cv::Mat smallMatrix;
-    cv::resize(img, smallMatrix, cv::Size(m_trainingRows, m_trainingCols), 0, 0, cv::INTER_LINEAR);
+    cv::resize(*image->getMat(), smallMatrix, cv::Size(10, 10), 0, 0, cv::INTER_LINEAR);
 
     // Convert matrix to float
     cv::Mat smallMatrixFloat;
@@ -20,31 +20,22 @@ std::pair<float, cv::Mat> Learner::_trainImage(char c, cv::Mat const& img) {
 
     // Make matrix flat
     cv::Mat smallMatrixFlat(smallMatrixFloat.reshape(1, 1));
-    return std::pair<float, cv::Mat>(static_cast<float>(c), smallMatrixFlat);
+    return std::pair<float, cv::Mat>(static_cast<float>(image->getLabel()), smallMatrixFlat);
 }
 
 bool Learner::trainKNN(std::string fileName) {
-    std::ifstream knnInput(fileName);
-    if(knnInput.is_open()) {
+
+    std::cout << ">> Loading training images" << std::endl;
+    File knnFile;
+    if(knnFile.read(fileName, 0)) {
 
         // Extract features
         cv::Mat trainSamples, trainLabels;
-
-        std::cout << ">> Loading training images ..." << std::endl;
-        while(!knnInput.eof()) {
-            cv::Mat char_img(28, 28, CV_8UC1);
-            char label;
-            knnInput >> label;
-            for(int row=0; row < 28; row++) {
-                for(int col=0; col < 28; col++) {
-                    int val;
-                    knnInput >> val;
-                    char_img.at<uchar>(row, col) = (uchar)val;
-                }
-            }
-            std::pair<float, cv::Mat> tinfo = _trainImage(label, char_img);
-            trainLabels.push_back(tinfo.first);
-            trainSamples.push_back(tinfo.second);
+        std::cout << ">> Processing training images ..." << std::endl;
+        for(int i=0; i < knnFile.getSize(); i++) {
+            std::pair<float, cv::Mat> metaMat = _prepareImage(knnFile.getImage(i));
+            trainLabels.push_back(metaMat.first);
+            trainSamples.push_back(metaMat.second);
         }
 
         // Convert to train data
@@ -56,7 +47,7 @@ bool Learner::trainKNN(std::string fileName) {
         m_knn->train(trainData);
         return m_knn->isTrained();
     } else {
-        std::cerr << "Error opening kNN input file" << std::endl;
+        std::cerr << "Error opening training file: " << fileName << std::endl;
     }
     return false;
 }

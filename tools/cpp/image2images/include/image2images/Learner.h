@@ -6,16 +6,13 @@
 class Learner {
 private:
     cv::Ptr<cv::ml::KNearest> m_knn;
-    int m_trainingRows = 15;
-    int m_trainingCols = 15;
 
     /**
      * Convert image to a vector for training
-     * @param c
-     * @param img
+     * @param image
      * @return tuple of the processed matrix and its lable
      */
-    std::pair<float, cv::Mat> _trainImage(char c, cv::Mat const& img);
+    std::pair<float, cv::Mat> _prepareImage(std::shared_ptr<Image> image);
 public:
 
     /**
