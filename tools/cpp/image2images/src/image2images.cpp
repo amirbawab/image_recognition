@@ -266,7 +266,7 @@ int main( int argc, char** argv ) {
                     if(!matrixFile.is_open()) {
                         std::cerr << "Error generating matrix: " << fileName.str() << std::endl;
                     } else {
-                        matrixFile << outputImage->getLabel() << " " << outputImage->getSide() << " ";
+                        matrixFile << outputImage->getLabel() << " " << outputImage->getSide();
                         for(int row=0; row < outputImage->getMat()->rows; row++) {
                             for(int col=0; col < outputImage->getMat()->cols; col++) {
                                 matrixFile << " " << (int) outputImage->getMat()->at<uchar>(row, col);
