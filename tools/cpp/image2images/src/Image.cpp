@@ -38,7 +38,7 @@ double Image::_averagePixelVal() {
 std::shared_ptr<Image> Image::binarize(int threshold) {
     std::shared_ptr<Image> binImage = _cloneImage();
 
-    // Average pixel threshold
+    // Average pixel threshold (Based on experiments)
     const int AVG_THERSHOLD = 50;
 
     // If threshold is 0, then try to get the best
@@ -47,8 +47,8 @@ std::shared_ptr<Image> Image::binarize(int threshold) {
         int startThreshold = (int)_averagePixelVal();
         do{
             _binarize(binImage, startThreshold);
-            startThreshold -= 5;
-        } while(startThreshold > 0 && (binImage->_charsControus().size() > NUM_OBJECTS
+            startThreshold += 5;
+        } while(startThreshold < 255 && (binImage->_charsControus().size() > NUM_OBJECTS
                                        || binImage->_averagePixelVal() > AVG_THERSHOLD));
     } else {
         _binarize(binImage, threshold);
@@ -128,7 +128,7 @@ std::shared_ptr<Image> Image::_align(const std::vector<int> &indices,
                                      std::vector<std::vector<cv::Point>> &charsContours) {
 
     // Compute new sizes
-    int padding = 3;
+    int padding = 2;
     int widthSum = padding *2;
     int heightSum = padding*2;
     for(int index=0; index < indices.size(); index++) {
