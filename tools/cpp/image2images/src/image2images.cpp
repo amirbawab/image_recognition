@@ -130,7 +130,7 @@ int main( int argc, char** argv ) {
     // Train kNN
     if(!g_knnFile.empty()) {
         g_learner.initKNN();
-        if(g_learner.trainKNN(g_inputFile)) {
+        if(g_learner.trainKNN(g_knnFile)) {
             std::cout << ">> Training kNN completed!" << std::endl;
         } else {
             std::cerr << "Error training kNN" << std::endl;

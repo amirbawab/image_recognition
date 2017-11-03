@@ -259,14 +259,7 @@ std::shared_ptr<Image> Image::size(int side) {
 }
 
 std::vector<charMatch> Image::extractChars() {
-    cv::Mat inverse_img;
-    cv::bitwise_not(*m_mat, inverse_img);
-
-    std::vector<std::vector<cv::Point>> contours;
-    std::vector<cv::Vec4i> hierarchy;
-
-    cv::findContours(inverse_img.clone(), contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
-
+    std::vector<std::vector<cv::Point>> contours = _charsControus();
     std::vector<charMatch> result;
 
     for (int i(0); i < contours.size(); ++i) {
@@ -309,7 +302,7 @@ std::string Image::recognize(cv::Ptr<cv::ml::KNearest> kNN) {
 //        std::cout << response << std::endl;
 //        std::cout << distance << std::endl;
 
-            result.push_back(char(p));
+            result.push_back((char)(p + '0'));
         }
     } else {
         std::cerr << "WARNING: Cannot recognize letter because KNN was not trained" << std::endl;
