@@ -6,8 +6,6 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#define NO_VALUE 777
-
 struct charMatch {
     cv::Point2i position;
     cv::Mat image;
@@ -16,28 +14,26 @@ struct charMatch {
 class Image : public std::enable_shared_from_this<Image>{
 private:
     static long m_uniq_id;
-
     std::string m_name;
     std::shared_ptr<cv::Mat> m_mat;
-    std::vector<std::vector<cv::Point>> m_contours;
-    int m_value;
+    int m_label;
     long m_id = m_uniq_id++;
 
     /**
      * Generate matrix permutatios
      * @param images
      * @param indices
+     * @param charsContours
      */
-    void _permutation(std::vector<std::shared_ptr<Image>> &images, std::vector<int> &indices);
+    void _permutation(std::vector<std::shared_ptr<Image>> &images, std::vector<int> &indices,
+                      std::vector<std::vector<cv::Point>> &charsContours);
 
     /**
      * Generate a new image
-     * @param rows
-     * @param cols
      * @parm indcies
      * @return generate image
      */
-    std::shared_ptr<Image> _buildImage(int rows, int cols, const std::vector<int> &indices);
+    std::shared_ptr<Image> _align(const std::vector<int> &indices, std::vector<std::vector<cv::Point>> &charsContours);
 
     /**
      * Generate binary image
@@ -59,12 +55,22 @@ private:
     void _mnist();
 
     /**
-     * Reduce image to K colors
-     * @param K
+     * Deep copy of the matrix
+     * @return matrix pointer
      */
-    void _reduceColors(int K);
+    std::shared_ptr<cv::Mat> _cloneMat();
+
+    // Detect elements
+    std::vector<std::vector<cv::Point>> _charsControus();
+
+    /**
+     * Deep clone image
+     * @return image pointer
+     */
+    std::shared_ptr<Image> _cloneImage();
+
 public:
-    Image(std::shared_ptr<cv::Mat> mat = nullptr, int value = NO_VALUE) : m_mat(mat), m_value(value){}
+    Image(int label, std::shared_ptr<cv::Mat> mat) : m_label(label), m_mat(mat){}
 
     /**
      * Set image name
@@ -85,8 +91,9 @@ public:
 
     /**
      * Clean background noise
+     * @return new image
      */
-    void cleanNoise();
+    std::shared_ptr<Image> cleanNoise();
 
     /**
      * Convert to binary
@@ -95,14 +102,9 @@ public:
     std::shared_ptr<Image> binarize(int threshold);
 
     /**
-     * Detect elements in matrix
-     */
-    void detectElements();
-
-    /**
      * Draw contour around objects
      */
-    void contour();
+    std::shared_ptr<Image> drawContour();
 
     /**
      * Recreate matrices
@@ -123,10 +125,10 @@ public:
     static void wait();
 
     /**
-     * Get value
-     * @return value or -1 if not set
+     * Get label
+     * @return label
      */
-    int getValue() const {return m_value;}
+    int getLabel() const {return m_label;}
 
     /**
      * Generate an image per detected element
@@ -162,12 +164,6 @@ public:
     std::vector<std::shared_ptr<Image>> mnist();
 
     /**
-     * Deep clone image
-     * @return image pointer
-     */
-    std::shared_ptr<Image> clone();
-
-    /**
      * Scale image
      * @param val
      * @return new image
@@ -186,4 +182,10 @@ public:
      * @return vector of matched chars
      */
     std::vector<charMatch> extractChars();
+
+    /**
+     * Get matrix side
+     * @return side
+     */
+    int getSide() const {return m_mat->rows;}
 };

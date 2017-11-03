@@ -8,35 +8,25 @@
 
 class File {
 private:
-    int m_imgRows;
-    int m_imgCols;
-    std::ifstream m_input;
-    std::ifstream m_label;
+    std::vector<std::shared_ptr<Image>> m_images;
 public:
-    File(int rows, int cols) : m_imgRows(rows), m_imgCols(cols) {}
+    /**
+     * Read file
+     * @param fileName
+     * @param numOfLine
+     * @return true if successful
+     */
+    bool read(std::string fileName, unsigned int numOfLine);
 
     /**
-     * Load a matrix
+     * Get total number of matrices
+     * @return size
+     */
+    int getSize() const { return m_images.size();}
+
+    /**
+     * Load image
      * @return matrix pointer
      */
-    std::shared_ptr<Image> loadImage();
-
-    /**
-     * Skip mat in file
-     */
-    void skipMat();
-
-    /**
-     * Set label file
-     * @param label
-     * @return true if file is open
-     */
-    bool setLabelFile(std::string label);
-
-    /**
-     * Set input file
-     * @param input
-     * @return true if file is open
-     */
-    bool setInputFile(std::string input);
+    std::shared_ptr<Image> getImage(int index);
 };

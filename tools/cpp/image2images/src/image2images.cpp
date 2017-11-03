@@ -7,11 +7,6 @@
 #include <fstream>
 #include <image2images/Learner.h>
 
-#define DATA_ROWS 64
-#define DATA_COLS 64
-#define MNIST_ROWS 28
-#define MNIST_COLS 28
-
 // Codes
 const int CODE_ERROR = 1;
 
@@ -19,24 +14,20 @@ const int CODE_ERROR = 1;
 std::vector<std::string> g_algos;
 std::string g_inputFile;
 std::string g_outputDir;
-std::string g_labelFile;
 std::string g_knnFile;
-int g_number = 1;
-int g_offset = 0;
+unsigned int g_number = 1;
+unsigned int g_offset = 0;
 bool g_display = false;
 bool g_matrix = false;
-bool g_mnist = false;
 
 // Learner variable
 Learner g_learner;
-
 
 // Algorithms
 const std::string ALGO_BINARY =         "binary";
 const std::string ALGO_PERMUTATION =    "permutation";
 const std::string ALGO_CLEAN =          "clean";
 const std::string ALGO_CONTOUR =        "contour";
-const std::string ALGO_DETECT =         "detect";
 const std::string ALGO_ALIGN =          "align";
 const std::string ALGO_SPLIT =          "split";
 const std::string ALGO_ROTATE =         "rotate";
@@ -51,14 +42,12 @@ void printUsage() {
     std::cout
             << "image2images - Process images" << std::endl
             << "    -i, --input      Input file" << std::endl
-            << "    -M, --MNIST      Reconfigure the input format to read MNIST" << std::endl
             << "    -a, --algorithm  Algorithms" << std::endl
             << "                     - " << ALGO_BINARY << "{1..255}: Convert image to binary with the "
                                                         << "provided threshold" << std::endl
             << "                     - " << ALGO_CLEAN << ": Clean noise in image" << std::endl
             << "                     - " << ALGO_PERMUTATION << ": Generate new permutation images" << std::endl
             << "                     - " << ALGO_CONTOUR << ": Draw contour around objects" << std::endl
-            << "                     - " << ALGO_DETECT << ": Detect elements in image" << std::endl
             << "                     - " << ALGO_ALIGN << ": Align detected elements in image" << std::endl
             << "                     - " << ALGO_SPLIT << ": Generate an image per detected element" << std::endl
             << "                     - " << ALGO_ROTATE << "{1..360}: Rotate images by the provided angle" << std::endl
@@ -67,7 +56,6 @@ void printUsage() {
             << "                     - " << ALGO_FINDKNN << ": Recognize image using kNN" << std::endl
             << "    -o, --output     Output directory" << std::endl
             << "    -m, --matrix     Output as matrix instead of image" << std::endl
-            << "    -l, --label      Label file" << std::endl
             << "    -d, --display    Show images in windows" << std::endl
             << "    -s, --offset     Offset/Starting image" << std::endl
             << "    -n, --number     Number of images to show" << std::endl
@@ -83,12 +71,10 @@ void printUsage() {
 void initParams(int argc, char *argv[]) {
     struct option longOptions[] = {
             {"input", required_argument,  0, 'i'},
-            {"MNIST", required_argument,  0, 'M'},
             {"output", required_argument, 0, 'o'},
             {"algorithm", required_argument, 0, 'a'},
             {"number", required_argument, 0, 'n'},
             {"offset", required_argument, 0, 's'},
-            {"label", required_argument, 0, 'l'},
             {"display",   no_argument,       0, 'd'},
             {"matrix",   no_argument,       0, 'm'},
             {"knn",   required_argument,       0, 'k'},
@@ -98,16 +84,13 @@ void initParams(int argc, char *argv[]) {
 
     int optionIndex = 0;
     int c;
-    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dmMl:k:", longOptions, &optionIndex)) != -1) {
+    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dmk:", longOptions, &optionIndex)) != -1) {
         switch (c) {
             case 'i':
                 g_inputFile = optarg;
                 break;
             case 's':
-                g_offset = atoi(optarg);
-                break;
-            case 'l':
-                g_labelFile = optarg;
+                g_offset = (unsigned int) atoi(optarg);
                 break;
             case 'o':
                 g_outputDir= optarg;
@@ -122,10 +105,7 @@ void initParams(int argc, char *argv[]) {
                 g_display = true;
                 break;
             case 'n':
-                g_number = atoi(optarg);
-                break;
-            case 'M':
-                g_mnist = true;
+                g_number = (unsigned int) atoi(optarg);
                 break;
             case 'k':
                 g_knnFile = optarg;
@@ -136,8 +116,6 @@ void initParams(int argc, char *argv[]) {
         }
     }
 }
-
-// FIXME Move this function to another file
 
 int main( int argc, char** argv ) {
     // Initialize parameters
@@ -159,49 +137,27 @@ int main( int argc, char** argv ) {
         }
     }
 
-    // Check if input file was found
-    int rows = DATA_ROWS;
-    int cols = DATA_COLS;
-    if(g_mnist) {
-        rows = MNIST_ROWS;
-        cols = MNIST_COLS;
-    }
-    File file(rows, cols);
-    if(!file.setInputFile(g_inputFile)) {
+    File file;
+    if(!file.read(g_inputFile, g_number + g_offset)) {
         std::cerr << "Error opening input file: " << g_inputFile << std::endl;
         return CODE_ERROR;
     }
 
-    // Check if label file was found
-    if(!g_labelFile.empty() && !file.setLabelFile(g_labelFile)) {
-        std::cerr << "Error opening csv file: " << g_labelFile << std::endl;
-        return CODE_ERROR;
-    }
-
-    // Create and store all images
-    int count = 0;
-    std::vector<std::shared_ptr<Image>> images;
-    std::cout << ">> Loading images ..." << std::endl;
-    while (count < g_offset + g_number) {
-        if(count < g_offset) {
-            file.skipMat();
-        } else {
-            images.push_back(file.loadImage());
-        }
-        count++;
-
-        // Log
-        int progress = count - g_offset;
-        if(progress > 0 && progress % 100 == 0) {
-            std::cout << ">> Loaded " << progress << " images out of " << g_number << std::endl;
-        }
-    }
-
-    // Adjust all images
+    // Process target images
     std::cout << ">> Starting image processing ..." << std::endl;
-    int progress = 0;
     bool windowOpen = false;
-    for(std::shared_ptr<Image> image : images){
+    int toMatIndex = g_offset + g_number;
+    for(int imageIndex = g_offset; imageIndex < toMatIndex; imageIndex++){
+
+        // Get image and check if it does exist
+        std::shared_ptr<Image> image = file.getImage(imageIndex);
+        if(!image) {
+            std::cout << "Matrix at index: " << imageIndex << " was not found. Halting ..." << std::endl;
+            exit(1);
+        }
+
+        // Store progress
+        int progress = imageIndex - g_offset;
 
         // Prepare vector for the images to generate
         std::vector<std::shared_ptr<Image>> outputImages;
@@ -224,10 +180,6 @@ int main( int argc, char** argv ) {
                     manipOutputImages.insert(manipOutputImages.end(), per.begin(), per.end());
                 }
                 outputImages = manipOutputImages;
-            } else if(algo == ALGO_DETECT){
-                for(auto outputImage : outputImages) {
-                    outputImage->detectElements();
-                }
             } else if(algo == ALGO_CLEAN) {
                 for (auto outputImage : outputImages) {
                     outputImage->cleanNoise();
@@ -236,10 +188,7 @@ int main( int argc, char** argv ) {
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for (auto outputImage : outputImages) {
                     std::shared_ptr<Image> align = outputImage->align();
-                    // TODO Handle case of image cannot be created
-                    if (align) {
-                        manipOutputImages.push_back(align);
-                    }
+                    manipOutputImages.push_back(align);
                 }
                 outputImages = manipOutputImages;
             } else if(algo.rfind(ALGO_ROTATE, 0) == 0 && algo.size() > ALGO_ROTATE.size()) {
@@ -258,9 +207,12 @@ int main( int argc, char** argv ) {
                 }
                 outputImages = manipOutputImages;
             } else if(algo == ALGO_CONTOUR) {
+                std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for (auto outputImage : outputImages) {
-                    outputImage->contour();
+                    std::shared_ptr<Image> contourImage = outputImage->drawContour();
+                    manipOutputImages.push_back(contourImage);
                 }
+                outputImages = manipOutputImages;
             } else if(algo == ALGO_MNIST) {
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for (auto outputImage : outputImages) {
@@ -297,7 +249,7 @@ int main( int argc, char** argv ) {
         if(!g_outputDir.empty()) {
             for(auto outputImage : outputImages) {
                 std::stringstream fileName;
-                fileName << g_outputDir << "/" << outputImage->getValue() << "/" << outputImage->getName();
+                fileName << g_outputDir << "/" << outputImage->getLabel() << "/" << outputImage->getName();
                 if(!g_matrix) {
                     fileName << ".tiff";
                     std::cout << ">> Generating image: " << fileName.str() << std::endl;
@@ -305,18 +257,16 @@ int main( int argc, char** argv ) {
                         std::cerr << "Error generating image: " << fileName.str() << std::endl;
                     }
                 } else {
-                    fileName << ".csv";
+                    fileName << ".ocv";
                     std::cout << ">> Generating matrix: " << fileName.str() << std::endl;
                     std::ofstream matrixFile(fileName.str());
                     if(!matrixFile.is_open()) {
                         std::cerr << "Error generating matrix: " << fileName.str() << std::endl;
                     } else {
+                        matrixFile << outputImage->getLabel() << " " << outputImage->getSide() << " ";
                         for(int row=0; row < outputImage->getMat()->rows; row++) {
                             for(int col=0; col < outputImage->getMat()->cols; col++) {
-                                if(row != 0 || col != 0) {
-                                    matrixFile << ",";
-                                }
-                                matrixFile << (int)outputImage->getMat()->at<uchar>(row, col);
+                                matrixFile << " " << (int) outputImage->getMat()->at<uchar>(row, col);
                             }
                         }
                         matrixFile.close();
@@ -335,8 +285,8 @@ int main( int argc, char** argv ) {
         }
 
         // Log
-        if(++progress % 100 == 0) {
-            std::cout << ">> Processed " << progress << " images out of " << images.size() << std::endl;
+        if( progress % 100 == 0) {
+            std::cout << ">> Processed " << progress + 1 << " images out of " << g_number << std::endl;
         }
     }
 
