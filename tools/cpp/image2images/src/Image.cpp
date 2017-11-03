@@ -128,13 +128,12 @@ std::shared_ptr<Image> Image::_align(const std::vector<int> &indices,
                                      std::vector<std::vector<cv::Point>> &charsContours) {
 
     // Compute new sizes
-    int padding = 2;
+    int padding = 3;
     int widthSum = 0;
     int height = 0;
     for(int index=0; index < indices.size(); index++) {
         cv::Rect brect = cv::boundingRect(cv::Mat(charsContours[indices[index]]).reshape(2));
-        int charSide = std::max(brect.width, brect.height);
-        widthSum += charSide + padding;
+        widthSum += std::max(brect.width, brect.height) + padding;
         height = std::max(height, brect.height);
     }
 
@@ -175,7 +174,7 @@ std::shared_ptr<Image> Image::_align(const std::vector<int> &indices,
                 (*image->getMat())(cv::Rect(leftOffset + leftCharOffset, topOffset, brect.width, brect.height)));
 
         // Update left offset
-        leftOffset += brect.width + padding;
+        leftOffset += std::max(brect.width, brect.height) + padding;
     }
     return image;
 }
