@@ -11,6 +11,6 @@ add_compile_options(-std=c++11)
 add_subdirectory(demo)
 add_subdirectory(image2images)
 add_subdirectory(neuralnetwork)
-add_subdirectory(tesseract)
+#add_subdirectory(tesseract)
 
 

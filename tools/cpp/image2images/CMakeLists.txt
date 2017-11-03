@@ -9,4 +9,4 @@ add_executable(${PROJECT_NAME} src/Image.cpp src/File.cpp src/Learner.cpp src/im
 # Add opencv
 find_package( OpenCV REQUIRED )
 target_link_libraries( ${PROJECT_NAME} ${OpenCV_LIBS} )
-target_link_libraries (${PROJECT_NAME} tesseract lept)
+#target_link_libraries (${PROJECT_NAME} tesseract lept)
