@@ -129,13 +129,17 @@ std::shared_ptr<Image> Image::_align(const std::vector<int> &indices,
 
     // Compute new sizes
     int padding = 2;
-    int widthSum = padding *2;
-    int heightSum = padding*2;
+    int widthSum = 0;
+    int heightSum = 0;
     for(int index=0; index < indices.size(); index++) {
         cv::Rect brect = cv::boundingRect(cv::Mat(charsContours[indices[index]]).reshape(2));
         widthSum += brect.width + padding;
-        heightSum += brect.height;
+        heightSum = std::max(heightSum, brect.height);
     }
+
+    // Add border padding
+    widthSum += 2*padding;
+    heightSum += 2*padding;
 
     // Determine new side value
     int side = std::max(widthSum, heightSum);
@@ -153,9 +157,15 @@ std::shared_ptr<Image> Image::_align(const std::vector<int> &indices,
         cv::Rect brect = cv::boundingRect(cv::Mat(charsContours[indices[i]]).reshape(2));
         cv::Mat elementMat = ((*m_mat)(cv::Rect(brect.tl(), brect.br())));
 
+        // Compute top offset
+        int topOffset = padding;
+        if(side > brect.height) {
+            topOffset = (side - brect.height) / 2;
+        }
+
         // Draw element on new matrix
         elementMat(cv::Rect(0,0,brect.width, brect.height)).copyTo(
-                (*image->getMat())(cv::Rect(leftOffset, padding, brect.width, brect.height)));
+                (*image->getMat())(cv::Rect(leftOffset, topOffset, brect.width, brect.height)));
 
         // Update left offset
         leftOffset += brect.width + padding;
