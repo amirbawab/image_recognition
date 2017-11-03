@@ -32,7 +32,7 @@ const std::string ALGO_ALIGN =          "align";
 const std::string ALGO_SPLIT =          "split";
 const std::string ALGO_ROTATE =         "rotate";
 const std::string ALGO_MNIST =          "mnist";
-const std::string ALGO_SCALE =          "scale";
+const std::string ALGO_SIZE =           "size";
 const std::string ALGO_FINDKNN =       "findKNN";
 
 /**
@@ -52,7 +52,7 @@ void printUsage() {
             << "                     - " << ALGO_SPLIT << ": Generate an image per detected element" << std::endl
             << "                     - " << ALGO_ROTATE << "{1..360}: Rotate images by the provided angle" << std::endl
             << "                     - " << ALGO_MNIST << ": Algorithm optimized for MNIST dataset" << std::endl
-            << "                     - " << ALGO_SCALE << "{1..N}: Scale image" << std::endl
+            << "                     - " << ALGO_SIZE << "{1..N}: Set image size" << std::endl
             << "                     - " << ALGO_FINDKNN << ": Recognize image using kNN" << std::endl
             << "    -o, --output     Output directory" << std::endl
             << "    -m, --matrix     Output as matrix instead of image" << std::endl
@@ -181,9 +181,12 @@ int main( int argc, char** argv ) {
                 }
                 outputImages = manipOutputImages;
             } else if(algo == ALGO_CLEAN) {
+                std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for (auto outputImage : outputImages) {
-                    outputImage->cleanNoise();
+                    std::shared_ptr<Image> cleanImage = outputImage->cleanNoise();
+                    manipOutputImages.push_back(cleanImage);
                 }
+                outputImages = manipOutputImages;
             } else if(algo == ALGO_ALIGN) {
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for (auto outputImage : outputImages) {
@@ -220,11 +223,11 @@ int main( int argc, char** argv ) {
                     manipOutputImages.insert(manipOutputImages.end(), mnist.begin(), mnist.end());
                 }
                 outputImages = manipOutputImages;
-            } else if(algo.rfind(ALGO_SCALE, 0) == 0 && algo.size() > ALGO_SCALE.size()) {
-                double val = atof(algo.substr(ALGO_SCALE.size(), algo.size() - ALGO_SCALE.size()).c_str());
+            } else if(algo.rfind(ALGO_SIZE, 0) == 0 && algo.size() > ALGO_SIZE.size()) {
+                int side = atoi(algo.substr(ALGO_SIZE.size(), algo.size() - ALGO_SIZE.size()).c_str());
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for (auto outputImage : outputImages) {
-                    std::shared_ptr<Image> scaledImage = outputImage->scale(val);
+                    std::shared_ptr<Image> scaledImage = outputImage->size(side);
                     manipOutputImages.push_back(scaledImage);
                 }
                 outputImages = manipOutputImages;

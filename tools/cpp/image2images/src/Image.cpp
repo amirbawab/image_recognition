@@ -242,9 +242,8 @@ std::shared_ptr<Image> Image::_cloneImage() {
     return std::make_shared<Image>(m_label, _cloneMat());
 }
 
-std::shared_ptr<Image> Image::scale(double val) {
+std::shared_ptr<Image> Image::size(int side) {
     std::shared_ptr<Image> image = _cloneImage();
-    int side = (int)(getSide()*val);
     cv::resize(*image->getMat(), *image->getMat(), cv::Size(side, side));
     return image;
 }

@@ -164,11 +164,11 @@ public:
     std::vector<std::shared_ptr<Image>> mnist();
 
     /**
-     * Scale image
-     * @param val
+     * Resize image
+     * @param side
      * @return new image
      */
-    std::shared_ptr<Image> scale(double val);
+    std::shared_ptr<Image> size(int side);
 
     /**
      * Recognize images
