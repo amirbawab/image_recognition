@@ -146,7 +146,7 @@ int main( int argc, char** argv ) {
     // Process target images
     std::cout << ">> Starting image processing ..." << std::endl;
     bool windowOpen = false;
-    int toMatIndex = g_offset + g_number;
+    int toMatIndex = g_offset + file.getSize();
     for(int imageIndex = g_offset; imageIndex < toMatIndex; imageIndex++){
 
         // Get image and check if it does exist

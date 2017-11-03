@@ -236,21 +236,15 @@ std::shared_ptr<Image> Image::rotate(int angle) {
 std::vector<std::shared_ptr<Image>> Image::mnist() {
     // Prepare mnist vector
     std::vector<std::shared_ptr<Image>> mnistVector;
-//    mnistVector.push_back(shared_from_this());
+    mnistVector.push_back(shared_from_this());
 
-     // Invert colors
-//    cv::bitwise_not (*m_mat, *m_mat);
-//
-     // Copy matrix to a larger one
-//    cv::copyMakeBorder(*m_mat, *m_mat, 11,11,11,11, cv::BORDER_CONSTANT, cv::Scalar(0));
-//
      // Rotate images
-//    std::shared_ptr<Image> LRImage = rotate(45);
-//    std::shared_ptr<Image> RRImage = rotate(-45);
-//
+    std::shared_ptr<Image> LRImage = rotate(45);
+    std::shared_ptr<Image> RRImage = rotate(-45);
+
      // Add new images
-//    mnistVector.push_back(LRImage);
-//    mnistVector.push_back(RRImage);
+    mnistVector.push_back(LRImage);
+    mnistVector.push_back(RRImage);
     return mnistVector;
 }
 
