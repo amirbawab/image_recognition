@@ -20,7 +20,9 @@ bool File::read(std::string fileName, unsigned int numOfLine) {
     inputFile >> totalMats;
 
     // Update total mats if specified by the user
-    totalMats = std::min(totalMats, numOfLine);
+    if(numOfLine > 0) {
+        totalMats = std::min(totalMats, numOfLine);
+    }
 
     // Resize vector
     m_images.resize(totalMats);
