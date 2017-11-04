@@ -130,7 +130,7 @@ int main( int argc, char** argv ) {
     // Train kNN
     if(!g_knnFile.empty()) {
         g_learner.initKNN();
-        if(g_learner.trainKNN(g_inputFile)) {
+        if(g_learner.trainKNN(g_knnFile)) {
             std::cout << ">> Training kNN completed!" << std::endl;
         } else {
             std::cerr << "Error training kNN" << std::endl;
@@ -146,8 +146,7 @@ int main( int argc, char** argv ) {
     // Process target images
     std::cout << ">> Starting image processing ..." << std::endl;
     bool windowOpen = false;
-    int toMatIndex = g_offset + g_number;
-    for(int imageIndex = g_offset; imageIndex < toMatIndex; imageIndex++){
+    for(int imageIndex = g_offset; imageIndex < file.getSize(); imageIndex++){
 
         // Get image and check if it does exist
         std::shared_ptr<Image> image = file.getImage(imageIndex);

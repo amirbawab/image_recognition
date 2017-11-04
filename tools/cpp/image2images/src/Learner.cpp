@@ -5,14 +5,14 @@ void Learner::initKNN() {
     m_knn= cv::ml::KNearest::create();
     m_knn->setIsClassifier(true);
     m_knn->setAlgorithmType(cv::ml::KNearest::Types::BRUTE_FORCE);
-    m_knn->setDefaultK(4);
+    m_knn->setDefaultK(5);
 }
 
 std::pair<float, cv::Mat> Learner::_prepareImage(std::shared_ptr<Image> image) {
 
     // Make the image smaller
     cv::Mat smallMatrix;
-    cv::resize(*image->getMat(), smallMatrix, cv::Size(10, 10), 0, 0, cv::INTER_LINEAR);
+    cv::resize(*image->getMat(), smallMatrix, cv::Size(28, 28), 0, 0, cv::INTER_LINEAR);
 
     // Convert matrix to float
     cv::Mat smallMatrixFloat;
@@ -42,9 +42,31 @@ bool Learner::trainKNN(std::string fileName) {
         cv::Ptr<cv::ml::TrainData> trainData = cv::ml::TrainData::create(
                 trainSamples, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
 
+
+
+        // Split data into train and test
+//        trainData->setTrainTestSplitRatio(0.9);
+//        std::cout << trainData->getNTestSamples() << "/" << trainData->getNTrainSamples() << std::endl;
+
         // Train kNN
         std::cout << ">> Started training kNN ..." << std::endl;
         m_knn->train(trainData);
+
+        // Cross validation
+//        cv::Mat testSamples = trainData->getTestSamples();
+//        cv::Mat testResponses = trainData->getTestResponses();
+//        int good = 0; int bad = 0;
+//        for(int row=0; row < testSamples.rows; row++) {
+//            float p = m_knn->findNearest(testSamples.row(row), m_knn->getDefaultK(), cv::noArray());
+//            if(p == testResponses.at<float>(row, 0)) {
+//                good++;
+//            } else {
+//                bad++;
+//            }
+//            std::cout << "Good: " << good << ", Bad: " << bad << ", Total samples: " << (good+bad) << testSamples.rows
+//                      << ", Accuracy: " << (double) good / (good+bad) << std::endl;
+//        }
+
         return m_knn->isTrained();
     } else {
         std::cerr << "Error opening training file: " << fileName << std::endl;

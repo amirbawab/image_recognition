@@ -157,6 +157,12 @@ std::shared_ptr<Image> Image::_align(const std::vector<int> &indices,
         cv::Rect brect = cv::boundingRect(cv::Mat(charsContours[indices[i]]).reshape(2));
         cv::Mat elementMat = ((*m_mat)(cv::Rect(brect.tl(), brect.br())));
 
+        // Create mask
+        cv::Mat bigMask = cv::Mat::zeros(m_mat->rows, m_mat->cols, m_mat->type());
+        drawContours(bigMask, charsContours, indices[i], cv::Scalar(255), CV_FILLED);
+        cv::Mat smallMask = cv::Mat::zeros(image->getMat()->rows, image->getMat()->cols, image->getMat()->type());
+        bigMask(cv::Rect(brect.x, brect.y, brect.width, brect.height)).copyTo(smallMask);
+
         // Compute top offset
         int topOffset = padding;
         if(side > brect.height) {
@@ -170,8 +176,8 @@ std::shared_ptr<Image> Image::_align(const std::vector<int> &indices,
         }
 
         // Draw element on new matrix
-        elementMat(cv::Rect(0,0,brect.width, brect.height)).copyTo(
-                (*image->getMat())(cv::Rect(leftOffset + leftCharOffset, topOffset, brect.width, brect.height)));
+        elementMat.copyTo(
+                (*image->getMat())(cv::Rect(leftOffset + leftCharOffset, topOffset, brect.width, brect.height)), smallMask);
 
         // Update left offset
         leftOffset += std::max(brect.width, brect.height) + padding;
@@ -236,21 +242,15 @@ std::shared_ptr<Image> Image::rotate(int angle) {
 std::vector<std::shared_ptr<Image>> Image::mnist() {
     // Prepare mnist vector
     std::vector<std::shared_ptr<Image>> mnistVector;
-//    mnistVector.push_back(shared_from_this());
+    mnistVector.push_back(shared_from_this());
 
-     // Invert colors
-//    cv::bitwise_not (*m_mat, *m_mat);
-//
-     // Copy matrix to a larger one
-//    cv::copyMakeBorder(*m_mat, *m_mat, 11,11,11,11, cv::BORDER_CONSTANT, cv::Scalar(0));
-//
      // Rotate images
-//    std::shared_ptr<Image> LRImage = rotate(45);
-//    std::shared_ptr<Image> RRImage = rotate(-45);
-//
+    std::shared_ptr<Image> LRImage = rotate(45);
+    std::shared_ptr<Image> RRImage = rotate(-45);
+
      // Add new images
-//    mnistVector.push_back(LRImage);
-//    mnistVector.push_back(RRImage);
+    mnistVector.push_back(LRImage);
+    mnistVector.push_back(RRImage);
     return mnistVector;
 }
 
@@ -265,14 +265,7 @@ std::shared_ptr<Image> Image::size(int side) {
 }
 
 std::vector<charMatch> Image::extractChars() {
-    cv::Mat inverse_img;
-    cv::bitwise_not(*m_mat, inverse_img);
-
-    std::vector<std::vector<cv::Point>> contours;
-    std::vector<cv::Vec4i> hierarchy;
-
-    cv::findContours(inverse_img.clone(), contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
-
+    std::vector<std::vector<cv::Point>> contours = _charsControus();
     std::vector<charMatch> result;
 
     for (int i(0); i < contours.size(); ++i) {
@@ -303,7 +296,7 @@ std::string Image::recognize(cv::Ptr<cv::ml::KNearest> kNN) {
         std::vector<charMatch> characters(extractChars());
         for (charMatch const& match : characters) {
             cv::Mat small_char;
-            cv::resize(match.image, small_char, cv::Size(10, 10), 0, 0, cv::INTER_LINEAR);
+            cv::resize(match.image, small_char, cv::Size(28, 28), 0, 0, cv::INTER_LINEAR);
 
             cv::Mat small_char_float;
             small_char.convertTo(small_char_float, CV_32FC1);
@@ -315,7 +308,7 @@ std::string Image::recognize(cv::Ptr<cv::ml::KNearest> kNN) {
 //        std::cout << response << std::endl;
 //        std::cout << distance << std::endl;
 
-            result.push_back(char(p));
+            result.push_back((char)(p + '0'));
         }
     } else {
         std::cerr << "WARNING: Cannot recognize letter because KNN was not trained" << std::endl;

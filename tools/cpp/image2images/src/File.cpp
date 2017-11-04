@@ -9,7 +9,7 @@ std::shared_ptr<Image> File::getImage(int index) {
 }
 
 bool File::read(std::string fileName, unsigned int numOfLine) {
-    std::cout << "Loading images ..." << std::endl;
+    std::cout << ">> Loading images ..." << std::endl;
     std::ifstream inputFile(fileName);
     if(!inputFile.is_open()) {
         return false;
