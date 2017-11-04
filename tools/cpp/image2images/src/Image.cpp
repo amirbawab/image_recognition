@@ -296,7 +296,7 @@ std::string Image::recognize(cv::Ptr<cv::ml::KNearest> kNN) {
         std::vector<charMatch> characters(extractChars());
         for (charMatch const& match : characters) {
             cv::Mat small_char;
-            cv::resize(match.image, small_char, cv::Size(10, 10), 0, 0, cv::INTER_LINEAR);
+            cv::resize(match.image, small_char, cv::Size(28, 28), 0, 0, cv::INTER_LINEAR);
 
             cv::Mat small_char_float;
             small_char.convertTo(small_char_float, CV_32FC1);

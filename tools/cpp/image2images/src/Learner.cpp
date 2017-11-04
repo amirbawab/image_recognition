@@ -5,14 +5,14 @@ void Learner::initKNN() {
     m_knn= cv::ml::KNearest::create();
     m_knn->setIsClassifier(true);
     m_knn->setAlgorithmType(cv::ml::KNearest::Types::BRUTE_FORCE);
-    m_knn->setDefaultK(4);
+    m_knn->setDefaultK(10);
 }
 
 std::pair<float, cv::Mat> Learner::_prepareImage(std::shared_ptr<Image> image) {
 
     // Make the image smaller
     cv::Mat smallMatrix;
-    cv::resize(*image->getMat(), smallMatrix, cv::Size(10, 10), 0, 0, cv::INTER_LINEAR);
+    cv::resize(*image->getMat(), smallMatrix, cv::Size(28, 28), 0, 0, cv::INTER_LINEAR);
 
     // Convert matrix to float
     cv::Mat smallMatrixFloat;
