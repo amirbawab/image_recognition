@@ -157,6 +157,12 @@ std::shared_ptr<Image> Image::_align(const std::vector<int> &indices,
         cv::Rect brect = cv::boundingRect(cv::Mat(charsContours[indices[i]]).reshape(2));
         cv::Mat elementMat = ((*m_mat)(cv::Rect(brect.tl(), brect.br())));
 
+        // Create mask
+        cv::Mat bigMask = cv::Mat::zeros(m_mat->rows, m_mat->cols, m_mat->type());
+        drawContours(bigMask, charsContours, indices[i], cv::Scalar(255), CV_FILLED);
+        cv::Mat smallMask = cv::Mat::zeros(image->getMat()->rows, image->getMat()->cols, image->getMat()->type());
+        bigMask(cv::Rect(brect.x, brect.y, brect.width, brect.height)).copyTo(smallMask);
+
         // Compute top offset
         int topOffset = padding;
         if(side > brect.height) {
@@ -170,8 +176,8 @@ std::shared_ptr<Image> Image::_align(const std::vector<int> &indices,
         }
 
         // Draw element on new matrix
-        elementMat(cv::Rect(0,0,brect.width, brect.height)).copyTo(
-                (*image->getMat())(cv::Rect(leftOffset + leftCharOffset, topOffset, brect.width, brect.height)));
+        elementMat.copyTo(
+                (*image->getMat())(cv::Rect(leftOffset + leftCharOffset, topOffset, brect.width, brect.height)), smallMask);
 
         // Update left offset
         leftOffset += std::max(brect.width, brect.height) + padding;
