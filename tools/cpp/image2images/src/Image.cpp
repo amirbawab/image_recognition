@@ -94,32 +94,6 @@ std::shared_ptr<Image> Image::cleanNoise() {
         }
     }
 
-    // Find new contours
-    charsContour = _charsControus();
-
-    // If no need to clean, return a clone
-    if(charsContour.size() <= NUM_OBJECTS) {
-        return cleanImage;
-    }
-
-    // Store <index,area> in vector
-    std::vector<std::pair<size_t, double>> pairs;
-    for (size_t i=0; i< charsContour.size(); i++) {
-        double area = cv::contourArea(charsContour[i], false);
-        pairs.push_back(std::make_pair(i, area));
-    }
-
-    // Sort vector
-    std::sort(pairs.begin(), pairs.end(),
-              [&](const std::pair<size_t, double>& firstElem, const std::pair<size_t , double >& secondElem) {
-                  return firstElem.second > secondElem.second;
-              });
-
-    // Keep only the largest NUM_OBECTS elements
-    for(size_t i=NUM_OBJECTS; i < pairs.size(); i++) {
-        cv::drawContours(*cleanImage->getMat(), charsContour, (int) pairs[i].first, 0, CV_FILLED);
-    }
-
     return cleanImage;
 }
 
