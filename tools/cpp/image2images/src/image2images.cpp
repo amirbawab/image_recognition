@@ -146,8 +146,7 @@ int main( int argc, char** argv ) {
     // Process target images
     std::cout << ">> Starting image processing ..." << std::endl;
     bool windowOpen = false;
-    int toMatIndex = g_offset + file.getSize();
-    for(int imageIndex = g_offset; imageIndex < toMatIndex; imageIndex++){
+    for(int imageIndex = g_offset; imageIndex < file.getSize(); imageIndex++){
 
         // Get image and check if it does exist
         std::shared_ptr<Image> image = file.getImage(imageIndex);
