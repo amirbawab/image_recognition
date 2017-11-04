@@ -33,7 +33,8 @@ const std::string ALGO_SPLIT =          "split";
 const std::string ALGO_ROTATE =         "rotate";
 const std::string ALGO_MNIST =          "mnist";
 const std::string ALGO_SIZE =           "size";
-const std::string ALGO_FINDKNN =       "findKNN";
+const std::string ALGO_FINDKNN =        "findKNN";
+const std::string ALGO_ERODE =          "erode";
 
 /**
  * Print program usage to stdout
@@ -54,6 +55,7 @@ void printUsage() {
             << "                     - " << ALGO_MNIST << ": Algorithm optimized for MNIST dataset" << std::endl
             << "                     - " << ALGO_SIZE << "{1..N}: Set image size" << std::endl
             << "                     - " << ALGO_FINDKNN << ": Recognize image using kNN" << std::endl
+            << "                     - " << ALGO_ERODE << "{1..N}: Erode element" << std::endl
             << "    -o, --output     Output directory" << std::endl
             << "    -m, --matrix     Output as matrix instead of image" << std::endl
             << "    -d, --display    Show images in windows" << std::endl
@@ -228,6 +230,14 @@ int main( int argc, char** argv ) {
                 for (auto outputImage : outputImages) {
                     std::shared_ptr<Image> scaledImage = outputImage->size(side);
                     manipOutputImages.push_back(scaledImage);
+                }
+                outputImages = manipOutputImages;
+            } else if(algo.rfind(ALGO_ERODE, 0) == 0 && algo.size() > ALGO_ERODE.size()) {
+                int size = atoi(algo.substr(ALGO_ERODE.size(), algo.size() - ALGO_ERODE.size()).c_str());
+                std::vector<std::shared_ptr<Image>> manipOutputImages;
+                for (auto outputImage : outputImages) {
+                    std::shared_ptr<Image> erodeImage = outputImage->erode(size);
+                    manipOutputImages.push_back(erodeImage);
                 }
                 outputImages = manipOutputImages;
             } else if(algo == ALGO_FINDKNN) {

@@ -69,6 +69,12 @@ private:
      */
     std::shared_ptr<Image> _cloneImage();
 
+    /**
+     * Reduce colors
+     * @param colors
+     */
+    void _reduceColors(int colors);
+
 public:
     Image(int label, std::shared_ptr<cv::Mat> mat) : m_label(label), m_mat(mat){}
 
@@ -169,6 +175,13 @@ public:
      * @return new image
      */
     std::shared_ptr<Image> size(int side);
+
+    /**
+     * Erode image
+     * @param size
+     * @return new image
+     */
+    std::shared_ptr<Image> erode(int size);
 
     /**
      * Recognize images

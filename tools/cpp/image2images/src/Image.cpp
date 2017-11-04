@@ -13,16 +13,52 @@ void Image::display() {
     cv::imshow(winName.str(), *m_mat);
 }
 
+void Image::_reduceColors(int k) {
+    int n = m_mat->rows * m_mat->cols;
+    cv::Mat data = m_mat->reshape(1, n);
+    data.convertTo(data, CV_32F);
+
+    std::vector<int> labels;
+    cv::Mat1f colors;
+    cv::kmeans(data, k, labels
+            , cv::TermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 10000, 0.0001)
+            , 5, cv::KMEANS_PP_CENTERS, colors);
+
+    for (int i = 0; i < n; ++i) {
+        data.at<float>(i, 0) = colors(labels[i], 0);
+    }
+
+    cv::Mat reduced = data.reshape(1, m_mat->rows);
+    reduced.convertTo(reduced, CV_8U);
+    reduced.copyTo(*m_mat);
+}
+
 void Image::_binarize(std::shared_ptr<Image> binImage, int threshold) {
     // Create a new matrix
     binImage->m_mat = _cloneMat();
 
+    // Enlarge
+    int scale = 5;
+    cv::resize(*binImage->getMat(), *binImage->getMat(),
+               cv::Size(scale * binImage->getMat()->rows, scale * binImage->getMat()->cols));
+
+    // Equalize
+    cv::equalizeHist(*binImage->getMat(), *binImage->getMat());
+
+    // Reduce colors
+    _reduceColors(5);
+
     // Apply binary threshold
     cv::threshold(*binImage->getMat(), *binImage->getMat(), threshold, 255, CV_THRESH_BINARY);
 
-    // Dilate objects to merge small parts
-    cv::dilate(*binImage->getMat(), *binImage->getMat(), cv::getStructuringElement(
-            cv::MORPH_ELLIPSE, cv::Size(m_mat->rows/64 + 2, m_mat->cols/64 + 2)));
+    // Dilate
+    int dilateVal = 4;
+    cv::Mat kernel(cv::getStructuringElement(cv::MORPH_RECT, cv::Size(dilateVal, dilateVal)));
+    cv::dilate(*binImage->getMat(), *binImage->getMat(), kernel, cv::Point(-1, -1), 1);
+
+    // Recover original size
+    cv::resize(*binImage->getMat(), *binImage->getMat(),
+               cv::Size(binImage->getMat()->rows/scale, binImage->getMat()->cols/scale));
 }
 
 double Image::_averagePixelVal() {
@@ -47,7 +83,7 @@ std::shared_ptr<Image> Image::binarize(int threshold) {
         int startThreshold = (int)_averagePixelVal();
         do{
             _binarize(binImage, startThreshold);
-            startThreshold += 5;
+            startThreshold += 10;
         } while(startThreshold < 255 && (binImage->_charsControus().size() > NUM_OBJECTS
                                        || binImage->_averagePixelVal() > AVG_THERSHOLD));
     } else {
@@ -261,6 +297,13 @@ std::shared_ptr<Image> Image::_cloneImage() {
 std::shared_ptr<Image> Image::size(int side) {
     std::shared_ptr<Image> image = _cloneImage();
     cv::resize(*image->getMat(), *image->getMat(), cv::Size(side, side));
+    return image;
+}
+
+std::shared_ptr<Image> Image::erode(int size) {
+    std::shared_ptr<Image> image = _cloneImage();
+    cv::erode(*image->getMat(), *image->getMat(), cv::getStructuringElement(
+            cv::MORPH_ELLIPSE, cv::Size(size, size)));
     return image;
 }
 
