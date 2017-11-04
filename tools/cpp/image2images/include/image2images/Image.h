@@ -36,14 +36,6 @@ private:
     std::shared_ptr<Image> _align(const std::vector<int> &indices, std::vector<std::vector<cv::Point>> &charsContours);
 
     /**
-     * Generate binary image
-     * @param image
-     * @param threshold
-     * @return binary image
-     */
-    void _binarize(std::shared_ptr<Image> image, int threshold);
-
-    /**
      * Get the average pixel value in matrix
      * @return average
      */
@@ -72,8 +64,9 @@ private:
     /**
      * Reduce colors
      * @param colors
+     * @return Largest pixel value
      */
-    void _reduceColors(int colors);
+    int _reduceColors(int colors);
 
 public:
     Image(int label, std::shared_ptr<cv::Mat> mat) : m_label(label), m_mat(mat){}
@@ -105,7 +98,7 @@ public:
      * Convert to binary
      * @param threshold
      */
-    std::shared_ptr<Image> binarize(int threshold);
+    std::shared_ptr<Image> binarize();
 
     /**
      * Draw contour around objects

@@ -13,7 +13,7 @@ void Image::display() {
     cv::imshow(winName.str(), *m_mat);
 }
 
-void Image::_reduceColors(int k) {
+int Image::_reduceColors(int k) {
     int n = m_mat->rows * m_mat->cols;
     cv::Mat data = m_mat->reshape(1, n);
     data.convertTo(data, CV_32F);
@@ -24,41 +24,16 @@ void Image::_reduceColors(int k) {
             , cv::TermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 10000, 0.0001)
             , 5, cv::KMEANS_PP_CENTERS, colors);
 
+    int maxVal = 0;
     for (int i = 0; i < n; ++i) {
         data.at<float>(i, 0) = colors(labels[i], 0);
+        maxVal = std::max(maxVal, (int)data.at<float>(i, 0));
     }
 
     cv::Mat reduced = data.reshape(1, m_mat->rows);
     reduced.convertTo(reduced, CV_8U);
     reduced.copyTo(*m_mat);
-}
-
-void Image::_binarize(std::shared_ptr<Image> binImage, int threshold) {
-    // Create a new matrix
-    binImage->m_mat = _cloneMat();
-
-    // Enlarge
-    int scale = 5;
-    cv::resize(*binImage->getMat(), *binImage->getMat(),
-               cv::Size(scale * binImage->getMat()->rows, scale * binImage->getMat()->cols));
-
-    // Equalize
-    cv::equalizeHist(*binImage->getMat(), *binImage->getMat());
-
-    // Reduce colors
-    _reduceColors(5);
-
-    // Apply binary threshold
-    cv::threshold(*binImage->getMat(), *binImage->getMat(), threshold, 255, CV_THRESH_BINARY);
-
-    // Dilate
-    int dilateVal = 4;
-    cv::Mat kernel(cv::getStructuringElement(cv::MORPH_RECT, cv::Size(dilateVal, dilateVal)));
-    cv::dilate(*binImage->getMat(), *binImage->getMat(), kernel, cv::Point(-1, -1), 1);
-
-    // Recover original size
-    cv::resize(*binImage->getMat(), *binImage->getMat(),
-               cv::Size(binImage->getMat()->rows/scale, binImage->getMat()->cols/scale));
+    return maxVal;
 }
 
 double Image::_averagePixelVal() {
@@ -71,24 +46,28 @@ double Image::_averagePixelVal() {
     return sum / (getSide()* getSide());
 }
 
-std::shared_ptr<Image> Image::binarize(int threshold) {
+std::shared_ptr<Image> Image::binarize() {
     std::shared_ptr<Image> binImage = _cloneImage();
 
-    // Average pixel threshold (Based on experiments)
-    const int AVG_THERSHOLD = 50;
+    // Enlarge
+    int scale = 5;
+    cv::resize(*binImage->getMat(), *binImage->getMat(),
+               cv::Size(scale * binImage->getMat()->rows, scale * binImage->getMat()->cols));
 
-    // If threshold is 0, then try to get the best
-    // binary image
-    if(threshold == 0) {
-        int startThreshold = (int)_averagePixelVal();
-        do{
-            _binarize(binImage, startThreshold);
-            startThreshold += 10;
-        } while(startThreshold < 255 && (binImage->_charsControus().size() > NUM_OBJECTS
-                                       || binImage->_averagePixelVal() > AVG_THERSHOLD));
-    } else {
-        _binarize(binImage, threshold);
-    }
+    // Reduce colors
+    int maxVal = binImage->_reduceColors(5);
+
+    // Apply binary threshold
+    cv::threshold(*binImage->getMat(), *binImage->getMat(), maxVal-1, 255, CV_THRESH_BINARY);
+
+    // Dilate
+    int dilateVal = 4;
+    cv::Mat kernel(cv::getStructuringElement(cv::MORPH_RECT, cv::Size(dilateVal, dilateVal)));
+    cv::dilate(*binImage->getMat(), *binImage->getMat(), kernel, cv::Point(-1, -1), 1);
+
+    // Recover original size
+    cv::resize(*binImage->getMat(), *binImage->getMat(),
+               cv::Size(binImage->getMat()->rows/scale, binImage->getMat()->cols/scale));
     return binImage;
 }
 
@@ -103,9 +82,20 @@ std::shared_ptr<Image> Image::align() {
 
 std::shared_ptr<Image> Image::cleanNoise() {
 
-    // Keep only the real characters
+    // Find contours
     std::vector<std::vector<cv::Point>> charsContour = _charsControus();
     std::shared_ptr<Image> cleanImage = _cloneImage();
+
+    // Clean small elements
+    for (size_t i=0; i< charsContour.size(); i++) {
+        double area = cv::contourArea(charsContour[i], false);
+        if(area < 20) {
+            cv::drawContours(*cleanImage->getMat(), charsContour, (int)i, 0, CV_FILLED);
+        }
+    }
+
+    // Find new contours
+    charsContour = _charsControus();
 
     // If no need to clean, return a clone
     if(charsContour.size() <= NUM_OBJECTS) {
@@ -122,13 +112,14 @@ std::shared_ptr<Image> Image::cleanNoise() {
     // Sort vector
     std::sort(pairs.begin(), pairs.end(),
               [&](const std::pair<size_t, double>& firstElem, const std::pair<size_t , double >& secondElem) {
-        return firstElem.second > secondElem.second;
-    });
+                  return firstElem.second > secondElem.second;
+              });
 
-    // Erase everything noise
+    // Keep only the largest NUM_OBECTS elements
     for(size_t i=NUM_OBJECTS; i < pairs.size(); i++) {
         cv::drawContours(*cleanImage->getMat(), charsContour, (int) pairs[i].first, 0, CV_FILLED);
     }
+
     return cleanImage;
 }
 

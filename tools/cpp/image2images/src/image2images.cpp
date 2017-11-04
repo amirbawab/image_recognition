@@ -166,11 +166,10 @@ int main( int argc, char** argv ) {
 
         // Apply algorithms
         for(std::string algo : g_algos) {
-            if(algo.rfind(ALGO_BINARY, 0) == 0 && algo.size() > ALGO_BINARY.size()) {
-                int val = atoi(algo.substr(ALGO_BINARY.size(), algo.size() - ALGO_BINARY.size()).c_str());
+            if(algo == ALGO_BINARY) {
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for(auto outputImage : outputImages) {
-                    std::shared_ptr<Image> binImage = outputImage->binarize(val);
+                    std::shared_ptr<Image> binImage = outputImage->binarize();
                     manipOutputImages.push_back(binImage);
                 }
                 outputImages = manipOutputImages;
