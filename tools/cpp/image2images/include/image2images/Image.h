@@ -68,6 +68,13 @@ private:
      */
     int _reduceColors(int colors);
 
+    /**
+     * Group contours together
+     * @param k
+     * @return contours
+     */
+    std::vector<std::vector<cv::Point>> _groupContours(int k);
+
 public:
     Image(int label, std::shared_ptr<cv::Mat> mat) : m_label(label), m_mat(mat){}
 

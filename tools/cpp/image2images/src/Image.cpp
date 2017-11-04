@@ -73,7 +73,7 @@ std::shared_ptr<Image> Image::binarize() {
 
 std::shared_ptr<Image> Image::align() {
     std::vector<int> indices;
-    std::vector<std::vector<cv::Point>> charsContour = _charsControus();
+    std::vector<std::vector<cv::Point>> charsContour = _groupContours(NUM_OBJECTS);
     for(int i=0; i < charsContour.size(); i++) {
         indices.push_back(i);
     }
@@ -103,7 +103,7 @@ std::shared_ptr<Image> Image::drawContour() {
     std::shared_ptr<Image> contourImage = _cloneImage();
 
     // Find contours
-    std::vector<std::vector<cv::Point>> charsContrours = contourImage->_charsControus();
+    std::vector<std::vector<cv::Point>> charsContrours = contourImage->_groupContours(NUM_OBJECTS);
 
     // Loop on each object
     for (size_t i=0; i<charsContrours.size(); i++) {
@@ -207,14 +207,16 @@ void Image::_permutation(std::vector<std::shared_ptr<Image>> &outputImages, std:
 std::vector<std::shared_ptr<Image>> Image::permutation() {
     std::vector<std::shared_ptr<Image>> perImages;
     std::vector<int> indices;
-    std::vector<std::vector<cv::Point>> charsContours = _charsControus();
+    std::vector<std::vector<cv::Point>> charsContours = _groupContours(NUM_OBJECTS);
     _permutation(perImages, indices, charsContours);
     return perImages;
 }
 
 std::vector<std::shared_ptr<Image>> Image::split() {
     std::vector<std::shared_ptr<Image>> splitImages;
-    std::vector<std::vector<cv::Point>> charsContours = _charsControus();
+
+    // Group contours
+    std::vector<std::vector<cv::Point>> charsContours = _groupContours(NUM_OBJECTS);
     for(int i=0; i < charsContours.size(); i++) {
         std::vector<int> indices = {i};
         std::shared_ptr<Image> elementImage = _align(indices, charsContours);
@@ -273,7 +275,7 @@ std::shared_ptr<Image> Image::erode(int size) {
 }
 
 std::vector<charMatch> Image::extractChars() {
-    std::vector<std::vector<cv::Point>> contours = _charsControus();
+    std::vector<std::vector<cv::Point>> contours = _groupContours(NUM_OBJECTS);
     std::vector<charMatch> result;
 
     for (int i(0); i < contours.size(); ++i) {
@@ -335,4 +337,81 @@ std::vector<std::vector<cv::Point>> Image::_charsControus() {
     std::vector<std::vector<cv::Point>> charsContours;
     cv::findContours(*m_mat, charsContours, cv::RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
     return charsContours;
+}
+
+std::vector<std::vector<cv::Point>> Image::_groupContours(int k) {
+    std::vector<std::vector<cv::Point>> charsContour = _charsControus();
+
+    // Check if already has at most k contours
+    if(charsContour.size() <= k) {
+        return charsContour;
+    }
+
+    // Compute center of each contour
+    std::vector<cv::Point> centers;
+    for(int i=0; i < charsContour.size(); i++) {
+        cv::Moments mmts = cv::moments(charsContour[i]);
+        int x = (int) std::round(mmts.m10 / mmts.m00);
+        int y = (int) std::round(mmts.m01 / mmts.m00);
+        centers.push_back(cv::Point(x, y));
+    }
+
+    // Match the closest two
+    std::map<int, std::vector<int>> groups;
+    for(int repeat=0; repeat < charsContour.size() - k; repeat++) {
+        int from = -1;
+        int to = -1;
+        for(int a=0; a < charsContour.size(); a++) {
+            for(int b=a+1; b < charsContour.size(); b++) {
+                // Check not added already
+                double eDist = cv::norm(centers[a] - centers[b]);
+                if(from == -1 || eDist < cv::norm(centers[from] - centers[to])) {
+                    if(groups.find(a) == groups.end()
+                       || std::find(groups[a].begin(), groups[a].end(), b) == groups[a].end()) {
+                        from = a;
+                        to = b;
+                    }
+                }
+            }
+        }
+
+        if(from != -1) {
+            groups[from].push_back(to);
+        }
+    }
+
+    // Prepare contours
+    std::vector<std::vector<cv::Point>> groupedContours;
+    std::vector<bool> visited(charsContour.size(), false);
+
+    // Add groups first
+    for(auto group : groups) {
+        if(!visited[group.first]) {
+            std::queue<int> indexQueue;
+            indexQueue.push(group.first);
+            std::vector<cv::Point> contour;
+            while(!indexQueue.empty()) {
+                int poll = indexQueue.front();
+                indexQueue.pop();
+                visited[poll] = true;
+                contour.insert(contour.end(), charsContour[poll].begin(), charsContour[poll].end());
+                if(groups.find(poll) != groups.end()) {
+                    for(int child : groups[poll]) {
+                        if(!visited[child]) {
+                            indexQueue.push(child);
+                        }
+                    }
+                }
+            }
+            groupedContours.push_back(contour);
+        }
+    }
+
+    // Add non-grouped contours
+    for(int i=0; i < charsContour.size(); i++) {
+        if(!visited[i]) {
+            groupedContours.push_back(charsContour[i]);
+        }
+    }
+    return groupedContours;
 }
