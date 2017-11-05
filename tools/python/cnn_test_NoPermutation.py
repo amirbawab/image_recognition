@@ -12,7 +12,7 @@ POOL_H = HEIGHT/LAYER
 POOL_W = WIDTH/LAYER
 RGB = 1
 CLASS = 40
-EPOCH = 2
+EPOCH = 500
 BATCH_SIZE = 128
 LEARNING_RATE = 1e-4
 
@@ -170,10 +170,10 @@ def main(tx, ty, test_x, test_y, file_t, mapping):
         gc.enable()    #Automatic garbage collection
 
         #Load test_x
-        test= np.genfromtxt(file_t, delimiter=',', skip_header=1)
+        test= np.genfromtxt(file_t, delimiter=' ', skip_header=1)
                 
         #Since our input format is different:
-        test = test[:,2:]
+        test = test[:, 2:]
         best = prediction.eval(feed_dict = { x: test, keep_prob: 1} )
         
         
@@ -185,7 +185,7 @@ def main(tx, ty, test_x, test_y, file_t, mapping):
         #Write to prediction file
         pred = pd.DataFrame(data=best)
         pred.index+=1
-        pred.to_csv("cnnPreProcessed_epoch1.csv", sep=',', header=['Label'], index=True, index_label='ID', encoding='utf-8')
+        pred.to_csv("cnnPreProcessed_epoch500.csv", sep=',', header=['Label'], index=True, index_label='ID', encoding='utf-8')
         
         #Write train and test accuracy to a file:
         np.savetxt('accuracy.csv', Accuracy, fmt='%i, %2.4f, %2.4f')
