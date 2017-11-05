@@ -318,7 +318,13 @@ std::string Image::recognize(cv::Ptr<cv::ml::KNearest> kNN) {
 //        std::cout << response << std::endl;
 //        std::cout << distance << std::endl;
 
-            result.push_back((char)(p + '0'));
+            if(p >= 0 && p <= 9) {
+                result.push_back((char)(p + '0'));
+            } else if(p == 10) {
+                result.push_back('A');
+            } else  {
+                result.push_back('M');
+            }
         }
     } else {
         std::cerr << "WARNING: Cannot recognize letter because KNN was not trained" << std::endl;
