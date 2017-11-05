@@ -84,7 +84,7 @@ def ascii_show(image):
             row += "{0: <4}".format(x)
         print row
 # Start
-ocvFile = open('mnist.ocv', 'w')
+ocvFile = open('emnist.ocv', 'w')
 mnistList = list(read())
 total = 0
 for item in mnistList:
