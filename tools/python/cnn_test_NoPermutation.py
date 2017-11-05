@@ -12,7 +12,7 @@ POOL_H = HEIGHT/LAYER
 POOL_W = WIDTH/LAYER
 RGB = 1
 CLASS = 40
-EPOCH = 1
+EPOCH = 2
 BATCH_SIZE = 128
 LEARNING_RATE = 1e-4
 
@@ -142,20 +142,18 @@ def main(tx, ty, test_x, test_y, file_t, mapping):
     train_writer = tf.summary.FileWriter(graph_location)
     train_writer.add_graph(tf.get_default_graph())
 
-    train_accuracy=[]
-    test_accuracy=[]
+    Accuracy=[]
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         for i in range(EPOCH):
             for batch in mini_batch(tx, ty, BATCH_SIZE):
                 xs,ys=batch
-                if i % 100 == 0:
+                if i % 1 == 0:
                     train_accuracy = accuracy.eval(feed_dict={ x: xs, y_: ys, keep_prob: 1.0})
                     #print('step %d, training accuracy %g' % (i, train_accuracy))
                     test_accuracy = accuracy.eval(feed_dict={ x: test_x, y_: test_y, keep_prob: 1.0})
-                    train_accuray.append(i, train_accuracy)
-                    test_accuray.append(i, test_accuracy)
+                    Accuracy.append([i, train_accuracy, test_accuracy])
                     print("Epoch = " + str(i) + " train accuracy: " + str(train_accuracy) + ", test accuracy: " + str(test_accuracy) )
 
                 train_step.run(feed_dict={x: xs, y_: ys, keep_prob: 0.5})
@@ -172,10 +170,9 @@ def main(tx, ty, test_x, test_y, file_t, mapping):
         gc.enable()    #Automatic garbage collection
 
         #Load test_x
-        test= np.genfromtxt(file_t, delimiter=',')
+        test= np.genfromtxt(file_t, delimiter=',', skip_header=1)
                 
-        #Since our input format is different: a[0] is label, a[1] is pixel, a[2]: NAN data=a[3:]
-        test = test[1:]
+        #Since our input format is different:
         test = test[:,2:]
         best = prediction.eval(feed_dict = { x: test, keep_prob: 1} )
         
@@ -191,23 +188,18 @@ def main(tx, ty, test_x, test_y, file_t, mapping):
         pred.to_csv("cnnPreProcessed_epoch1.csv", sep=',', header=['Label'], index=True, index_label='ID', encoding='utf-8')
         
         #Write train and test accuracy to a file:
-        with open('train_accuracy.txt', 'w') as f:
-            for train in train_accuracy:
-                f.write(str(train[0]) + ', ' + str(train[1]) +'\n')
-        
-        with open('test_accuracy.txt', 'w') as f:
-            for te in test_accuracy:
-                f.write(str(te[0]) + ', ' + str(te[1]) +'\n')
-
+        np.savetxt('accuracy.csv', Accuracy, fmt='%i, %2.4f, %2.4f')
 
 
 if __name__ == '__main__':
     #Loading data
-    file_x = "../data/trainx.csv"
+    file_x = "../data/train.csv"
     file_t = "../data/test.csv"
 
     tx= np.genfromtxt(file_x, delimiter=' ', skip_header=1)
 
+    #randomly shuffle tx:
+    np.random.shuffle(tx)
     #test= np.genfromtxt(file_t, delimiter=',')
 
     ty = tx[:, 0]
@@ -215,7 +207,7 @@ if __name__ == '__main__':
     tx = tx[:, 2:]
 
     #Split train and test
-    ind = int( tx.shape[0]/5*4 )
+    ind = int( tx.shape[0]/5*4.5 )
     test_x = tx[ind:]
     test_y = ty[ind:]
     test_y = test_y.reshape(-1, 1)
