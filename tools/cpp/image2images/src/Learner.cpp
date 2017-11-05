@@ -142,6 +142,7 @@ void Learner::runKNN(std::string fileName, int id, std::vector<std::shared_ptr<I
         } else {
             outputFile << label << std::endl;
         }
+        outputFile.close();
     } else {
         std::cerr << "Error opening output file: " << fileName << std::endl;
     }
