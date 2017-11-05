@@ -19,6 +19,7 @@ unsigned int g_number = 1;
 unsigned int g_offset = 0;
 bool g_display = false;
 bool g_matrix = false;
+bool g_cmatrix = false;
 
 // Learner variable
 Learner g_learner;
@@ -59,6 +60,7 @@ void printUsage() {
             << "                     - " << ALGO_ERODE << "{1..N}: Erode element" << std::endl
             << "    -o, --output     Output directory" << std::endl
             << "    -m, --matrix     Output as matrix instead of image" << std::endl
+            << "    -M, --cmatrix    Same as --matrix but all in one file" << std::endl
             << "    -d, --display    Show images in windows" << std::endl
             << "    -s, --offset     Offset/Starting image" << std::endl
             << "    -n, --number     Number of images to show" << std::endl
@@ -80,6 +82,7 @@ void initParams(int argc, char *argv[]) {
             {"offset", required_argument, 0, 's'},
             {"display",   no_argument,       0, 'd'},
             {"matrix",   no_argument,       0, 'm'},
+            {"cmatrix",   no_argument,       0, 'M'},
             {"knn",   required_argument,       0, 'k'},
             {"help",   no_argument,       0, 'h'},
             {0, 0,                        0, 0}
@@ -87,7 +90,7 @@ void initParams(int argc, char *argv[]) {
 
     int optionIndex = 0;
     int c;
-    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dmk:", longOptions, &optionIndex)) != -1) {
+    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dmk:M", longOptions, &optionIndex)) != -1) {
         switch (c) {
             case 'i':
                 g_inputFile = optarg;
@@ -103,6 +106,9 @@ void initParams(int argc, char *argv[]) {
                 break;
             case 'm':
                 g_matrix = true;
+                break;
+            case 'M':
+                g_cmatrix = true;
                 break;
             case 'd':
                 g_display = true;
@@ -146,9 +152,20 @@ int main( int argc, char** argv ) {
         return CODE_ERROR;
     }
 
+    // Clear tmp file for cmatrix
+    std::string cmatrixFile = g_outputDir + "/all_ocv.ocv";
+    std::string cmatrixTmpFile = cmatrixFile + ".tmp";
+    if(g_cmatrix) {
+        std::ofstream matrixTmpFile(cmatrixTmpFile, std::ofstream::out | std::ofstream::trunc);
+        if(matrixTmpFile.is_open()) {
+            matrixTmpFile.close();
+        }
+    }
+
     // Process target images
     std::cout << ">> Starting image processing ..." << std::endl;
     bool windowOpen = false;
+    long totalMats = 0;
     for(int imageIndex = g_offset; imageIndex < file.getSize(); imageIndex++){
 
         // Get image and check if it does exist
@@ -269,13 +286,7 @@ int main( int argc, char** argv ) {
             for(auto outputImage : outputImages) {
                 std::stringstream fileName;
                 fileName << g_outputDir << "/" << outputImage->getLabel() << "/" << outputImage->getName();
-                if(!g_matrix) {
-                    fileName << ".tiff";
-                    std::cout << ">> Generating image: " << fileName.str() << std::endl;
-                    if(!cv::imwrite(fileName.str(), *outputImage->getMat())) {
-                        std::cerr << "Error generating image: " << fileName.str() << std::endl;
-                    }
-                } else {
+                if(g_matrix) {
                     fileName << ".ocv";
                     std::cout << ">> Generating matrix: " << fileName.str() << std::endl;
                     std::ofstream matrixFile(fileName.str());
@@ -289,6 +300,30 @@ int main( int argc, char** argv ) {
                             }
                         }
                         matrixFile.close();
+                    }
+                } else if(g_cmatrix) {
+                    std::cout << ">> Adding matrix " << outputImage->getName() << " to output file "
+                              << cmatrixTmpFile << std::endl;
+                    std::ofstream matrixFile(cmatrixTmpFile, std::ios::app);
+                    if(!matrixFile.is_open()) {
+                        std::cerr << "Error generating matrix: " << cmatrixTmpFile << std::endl;
+                    } else {
+                        matrixFile << outputImage->getLabel() << " " << outputImage->getSide();
+                        for(int row=0; row < outputImage->getMat()->rows; row++) {
+                            for(int col=0; col < outputImage->getMat()->cols; col++) {
+                                matrixFile << " " << (int) outputImage->getMat()->at<uchar>(row, col);
+                            }
+                        }
+                        matrixFile << std::endl;
+                        matrixFile.close();
+                        totalMats++;
+                    }
+
+                } else {
+                    fileName << ".tiff";
+                    std::cout << ">> Generating image: " << fileName.str() << std::endl;
+                    if(!cv::imwrite(fileName.str(), *outputImage->getMat())) {
+                        std::cerr << "Error generating image: " << fileName.str() << std::endl;
                     }
                 }
             }
@@ -308,6 +343,23 @@ int main( int argc, char** argv ) {
             std::cout << ">> Processed " << progress + 1 << " images out of " << g_number << std::endl;
         }
     }
+
+    // Rewrite cmatrix file
+    if(g_cmatrix) {
+        std::cout << ">> Generating output file: " << cmatrixFile << std::endl;
+        std::ofstream matrixFile(cmatrixFile);
+        std::ifstream matrixTmpFile(cmatrixTmpFile);
+        if (!matrixFile.is_open()) {
+            std::cerr << "Error generating matrix: " << cmatrixFile << std::endl;
+        } else {
+            matrixFile << totalMats << std::endl;
+            matrixFile << matrixTmpFile.rdbuf();
+        }
+        matrixFile.close();
+        matrixTmpFile.close();
+        std::remove(cmatrixTmpFile.c_str());
+    }
+
 
     // Pause if new images found
     if(windowOpen) {
