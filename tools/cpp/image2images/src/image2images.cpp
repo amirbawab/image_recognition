@@ -34,10 +34,11 @@ const std::string ALGO_SPLIT =          "split";
 const std::string ALGO_ROTATE =         "rotate";
 const std::string ALGO_MNIST =          "mnist";
 const std::string ALGO_SIZE =           "size";
-const std::string ALGO_FINDKNN =        "findKNN";
 const std::string ALGO_ERODE =          "erode";
 const std::string ALGO_BLUR =           "blur";
+const std::string ALGO_FINDKNN =        "findKNN";
 const std::string ALGO_VALIDATEKNN =    "validateKNN";
+const std::string ALGO_RUNKNN =         "runKNN";
 
 /**
  * Print program usage to stdout
@@ -57,9 +58,12 @@ void printUsage() {
             << "                     - " << ALGO_ROTATE << "{1..360}: Rotate images by the provided angle" << std::endl
             << "                     - " << ALGO_MNIST << ": Algorithm optimized for MNIST dataset" << std::endl
             << "                     - " << ALGO_SIZE << "{1..N}: Set image size" << std::endl
-            << "                     - " << ALGO_FINDKNN << ": Recognize image using kNN" << std::endl
             << "                     - " << ALGO_ERODE << "{1..N}: Erode element" << std::endl
-            << "                     - " << ALGO_VALIDATEKNN << ": Validate the input if labels are known" << std::endl
+            << "                     - " << ALGO_FINDKNN << ": Recognize image using kNN" << std::endl
+            << "                     - " << ALGO_VALIDATEKNN << ": Validate the input. "
+                                                            << "Must use only if labels are known" << std::endl
+            << "                     - " << ALGO_RUNKNN << ": Write kNN results to file. "
+                                                            << "Must use for unknown labels" << std::endl
             << "    -o, --output     Output directory" << std::endl
             << "    -m, --matrix     Output as matrix instead of image" << std::endl
             << "    -M, --cmatrix    Same as --matrix but all in one file" << std::endl
@@ -273,6 +277,8 @@ int main( int argc, char** argv ) {
                 }
             } else if(algo == ALGO_VALIDATEKNN) {
                 g_learner.validateKNN(outputImages);
+            } else if(algo == ALGO_RUNKNN) {
+                g_learner.runKNN("/tmp/result_knn.csv", progress+1, outputImages);
             } else {
                 std::cerr << "Algorithm " << algo << " not found!" << std::endl;
             }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <image2images/File.h>
 #include <image2images/Image.h>
 
@@ -29,6 +30,12 @@ private:
      * @return true if it is an addition or multiplication
      */
     bool _isOperation(char a);
+
+    /**
+     * Validate kNN
+     * @return result
+     */
+    int _getLabel(std::vector<std::shared_ptr<Image>> images, std::function<std::vector<char>()> algoFunc);
 public:
 
     /**
@@ -59,4 +66,12 @@ public:
      * Validate images
      */
     void validateKNN(std::vector<std::shared_ptr<Image>> images);
+
+    /**
+     * Write kNN results to file
+     * @param fileName
+     * @param id
+     * @param images
+     */
+    void runKNN(std::string fileName, int id, std::vector<std::shared_ptr<Image>> images);
 };
