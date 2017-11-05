@@ -37,6 +37,7 @@ const std::string ALGO_SIZE =           "size";
 const std::string ALGO_FINDKNN =        "findKNN";
 const std::string ALGO_ERODE =          "erode";
 const std::string ALGO_BLUR =           "blur";
+const std::string ALGO_VALIDATEKNN =    "validateKNN";
 
 /**
  * Print program usage to stdout
@@ -58,6 +59,7 @@ void printUsage() {
             << "                     - " << ALGO_SIZE << "{1..N}: Set image size" << std::endl
             << "                     - " << ALGO_FINDKNN << ": Recognize image using kNN" << std::endl
             << "                     - " << ALGO_ERODE << "{1..N}: Erode element" << std::endl
+            << "                     - " << ALGO_VALIDATEKNN << ": Validate the input if labels are known" << std::endl
             << "    -o, --output     Output directory" << std::endl
             << "    -m, --matrix     Output as matrix instead of image" << std::endl
             << "    -M, --cmatrix    Same as --matrix but all in one file" << std::endl
@@ -266,9 +268,11 @@ int main( int argc, char** argv ) {
                 outputImages = manipOutputImages;
             } else if(algo == ALGO_FINDKNN) {
                 for (auto outputImage : outputImages) {
-                    std::string word = outputImage->recognize(g_learner.getKnn());
-                    std::cout << "Image ID: " << outputImage->getId() << " >> " << word << std::endl;
+                    char element = g_learner.findKNN(outputImage);
+                    std::cout << "Image ID: " << outputImage->getId() << " >> " << element << std::endl;
                 }
+            } else if(algo == ALGO_VALIDATEKNN) {
+                g_learner.validateKNN(outputImages);
             } else {
                 std::cerr << "Algorithm " << algo << " not found!" << std::endl;
             }

@@ -190,13 +190,6 @@ public:
     std::shared_ptr<Image> blur();
 
     /**
-     * Recognize images
-     * @param kNN
-     * @return recognize images
-     */
-    std::string recognize(cv::Ptr<cv::ml::KNearest> kNN);
-
-    /**
      * Extract characters
      * @return vector of matched chars
      */

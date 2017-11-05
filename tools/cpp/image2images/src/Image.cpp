@@ -300,36 +300,6 @@ std::vector<charMatch> Image::extractChars() {
     return result;
 }
 
-std::string Image::recognize(cv::Ptr<cv::ml::KNearest> kNN) {
-    std::string result;
-    if(kNN && kNN->isTrained()) {
-        cv::Mat small_char;
-        cv::resize(*m_mat, small_char, cv::Size(28, 28), 0, 0, cv::INTER_LINEAR);
-
-        cv::Mat small_char_float;
-        small_char.convertTo(small_char_float, CV_32FC1);
-
-        cv::Mat small_char_linear(small_char_float.reshape(1, 1));
-
-        cv::Mat response, distance;
-        float p = kNN->findNearest(small_char_linear, kNN->getDefaultK(), cv::noArray(), response, distance);
-//        std::cout << response << std::endl;
-//        std::cout << distance << std::endl;
-
-        if(p >= 0 && p <= 9) {
-            result.push_back((char)(p + '0'));
-        } else if(p == 10) {
-            result.push_back('A');
-        } else  {
-            result.push_back('M');
-        }
-    } else {
-        std::cerr << "WARNING: Cannot recognize letter because KNN was not trained" << std::endl;
-    }
-
-    return result;
-}
-
 std::shared_ptr<cv::Mat> Image::_cloneMat() {
     std::shared_ptr<cv::Mat> mat = std::make_shared<cv::Mat>(getSide(), getSide(), m_mat->type());
     m_mat->copyTo(*mat);
