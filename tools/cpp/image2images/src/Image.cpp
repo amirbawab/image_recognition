@@ -13,16 +13,27 @@ void Image::display() {
     cv::imshow(winName.str(), *m_mat);
 }
 
-void Image::_binarize(std::shared_ptr<Image> binImage, int threshold) {
-    // Create a new matrix
-    binImage->m_mat = _cloneMat();
+int Image::_reduceColors(int k) {
+    int n = m_mat->rows * m_mat->cols;
+    cv::Mat data = m_mat->reshape(1, n);
+    data.convertTo(data, CV_32F);
 
-    // Apply binary threshold
-    cv::threshold(*binImage->getMat(), *binImage->getMat(), threshold, 255, CV_THRESH_BINARY);
+    std::vector<int> labels;
+    cv::Mat1f colors;
+    cv::kmeans(data, k, labels
+            , cv::TermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 10000, 0.0001)
+            , 5, cv::KMEANS_PP_CENTERS, colors);
 
-    // Dilate objects to merge small parts
-    cv::dilate(*binImage->getMat(), *binImage->getMat(), cv::getStructuringElement(
-            cv::MORPH_ELLIPSE, cv::Size(m_mat->rows/64 + 2, m_mat->cols/64 + 2)));
+    int maxVal = 0;
+    for (int i = 0; i < n; ++i) {
+        data.at<float>(i, 0) = colors(labels[i], 0);
+        maxVal = std::max(maxVal, (int)data.at<float>(i, 0));
+    }
+
+    cv::Mat reduced = data.reshape(1, m_mat->rows);
+    reduced.convertTo(reduced, CV_8U);
+    reduced.copyTo(*m_mat);
+    return maxVal;
 }
 
 double Image::_averagePixelVal() {
@@ -35,30 +46,34 @@ double Image::_averagePixelVal() {
     return sum / (getSide()* getSide());
 }
 
-std::shared_ptr<Image> Image::binarize(int threshold) {
+std::shared_ptr<Image> Image::binarize() {
     std::shared_ptr<Image> binImage = _cloneImage();
 
-    // Average pixel threshold (Based on experiments)
-    const int AVG_THERSHOLD = 50;
+    // Enlarge
+    int scale = 5;
+    cv::resize(*binImage->getMat(), *binImage->getMat(),
+               cv::Size(scale * binImage->getMat()->rows, scale * binImage->getMat()->cols));
 
-    // If threshold is 0, then try to get the best
-    // binary image
-    if(threshold == 0) {
-        int startThreshold = (int)_averagePixelVal();
-        do{
-            _binarize(binImage, startThreshold);
-            startThreshold += 5;
-        } while(startThreshold < 255 && (binImage->_charsControus().size() > NUM_OBJECTS
-                                       || binImage->_averagePixelVal() > AVG_THERSHOLD));
-    } else {
-        _binarize(binImage, threshold);
-    }
+    // Reduce colors
+    int maxVal = binImage->_reduceColors(5);
+
+    // Apply binary threshold
+    cv::threshold(*binImage->getMat(), *binImage->getMat(), maxVal-1, 255, CV_THRESH_BINARY);
+
+    // Dilate
+    int dilateVal = 4;
+    cv::Mat kernel(cv::getStructuringElement(cv::MORPH_RECT, cv::Size(dilateVal, dilateVal)));
+    cv::dilate(*binImage->getMat(), *binImage->getMat(), kernel, cv::Point(-1, -1), 1);
+
+    // Recover original size
+    cv::resize(*binImage->getMat(), *binImage->getMat(),
+               cv::Size(binImage->getMat()->rows/scale, binImage->getMat()->cols/scale));
     return binImage;
 }
 
 std::shared_ptr<Image> Image::align() {
     std::vector<int> indices;
-    std::vector<std::vector<cv::Point>> charsContour = _charsControus();
+    std::vector<std::vector<cv::Point>> charsContour = _groupContours(NUM_OBJECTS);
     for(int i=0; i < charsContour.size(); i++) {
         indices.push_back(i);
     }
@@ -67,32 +82,18 @@ std::shared_ptr<Image> Image::align() {
 
 std::shared_ptr<Image> Image::cleanNoise() {
 
-    // Keep only the real characters
+    // Find contours
     std::vector<std::vector<cv::Point>> charsContour = _charsControus();
     std::shared_ptr<Image> cleanImage = _cloneImage();
 
-    // If no need to clean, return a clone
-    if(charsContour.size() <= NUM_OBJECTS) {
-        return cleanImage;
-    }
-
-    // Store <index,area> in vector
-    std::vector<std::pair<size_t, double>> pairs;
+    // Clean small elements
     for (size_t i=0; i< charsContour.size(); i++) {
         double area = cv::contourArea(charsContour[i], false);
-        pairs.push_back(std::make_pair(i, area));
+        if(area < 20) {
+            cv::drawContours(*cleanImage->getMat(), charsContour, (int)i, 0, CV_FILLED);
+        }
     }
 
-    // Sort vector
-    std::sort(pairs.begin(), pairs.end(),
-              [&](const std::pair<size_t, double>& firstElem, const std::pair<size_t , double >& secondElem) {
-        return firstElem.second > secondElem.second;
-    });
-
-    // Erase everything noise
-    for(size_t i=NUM_OBJECTS; i < pairs.size(); i++) {
-        cv::drawContours(*cleanImage->getMat(), charsContour, (int) pairs[i].first, 0, CV_FILLED);
-    }
     return cleanImage;
 }
 
@@ -102,7 +103,7 @@ std::shared_ptr<Image> Image::drawContour() {
     std::shared_ptr<Image> contourImage = _cloneImage();
 
     // Find contours
-    std::vector<std::vector<cv::Point>> charsContrours = contourImage->_charsControus();
+    std::vector<std::vector<cv::Point>> charsContrours = contourImage->_groupContours(NUM_OBJECTS);
 
     // Loop on each object
     for (size_t i=0; i<charsContrours.size(); i++) {
@@ -206,14 +207,16 @@ void Image::_permutation(std::vector<std::shared_ptr<Image>> &outputImages, std:
 std::vector<std::shared_ptr<Image>> Image::permutation() {
     std::vector<std::shared_ptr<Image>> perImages;
     std::vector<int> indices;
-    std::vector<std::vector<cv::Point>> charsContours = _charsControus();
+    std::vector<std::vector<cv::Point>> charsContours = _groupContours(NUM_OBJECTS);
     _permutation(perImages, indices, charsContours);
     return perImages;
 }
 
 std::vector<std::shared_ptr<Image>> Image::split() {
     std::vector<std::shared_ptr<Image>> splitImages;
-    std::vector<std::vector<cv::Point>> charsContours = _charsControus();
+
+    // Group contours
+    std::vector<std::vector<cv::Point>> charsContours = _groupContours(NUM_OBJECTS);
     for(int i=0; i < charsContours.size(); i++) {
         std::vector<int> indices = {i};
         std::shared_ptr<Image> elementImage = _align(indices, charsContours);
@@ -264,8 +267,15 @@ std::shared_ptr<Image> Image::size(int side) {
     return image;
 }
 
+std::shared_ptr<Image> Image::erode(int size) {
+    std::shared_ptr<Image> image = _cloneImage();
+    cv::erode(*image->getMat(), *image->getMat(), cv::getStructuringElement(
+            cv::MORPH_ELLIPSE, cv::Size(size, size)));
+    return image;
+}
+
 std::vector<charMatch> Image::extractChars() {
-    std::vector<std::vector<cv::Point>> contours = _charsControus();
+    std::vector<std::vector<cv::Point>> contours = _groupContours(NUM_OBJECTS);
     std::vector<charMatch> result;
 
     for (int i(0); i < contours.size(); ++i) {
@@ -327,4 +337,81 @@ std::vector<std::vector<cv::Point>> Image::_charsControus() {
     std::vector<std::vector<cv::Point>> charsContours;
     cv::findContours(*m_mat, charsContours, cv::RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
     return charsContours;
+}
+
+std::vector<std::vector<cv::Point>> Image::_groupContours(int k) {
+    std::vector<std::vector<cv::Point>> charsContour = _charsControus();
+
+    // Check if already has at most k contours
+    if(charsContour.size() <= k) {
+        return charsContour;
+    }
+
+    // Compute center of each contour
+    std::vector<cv::Point> centers;
+    for(int i=0; i < charsContour.size(); i++) {
+        cv::Moments mmts = cv::moments(charsContour[i]);
+        int x = (int) std::round(mmts.m10 / mmts.m00);
+        int y = (int) std::round(mmts.m01 / mmts.m00);
+        centers.push_back(cv::Point(x, y));
+    }
+
+    // Match the closest two
+    std::map<int, std::vector<int>> groups;
+    for(int repeat=0; repeat < charsContour.size() - k; repeat++) {
+        int from = -1;
+        int to = -1;
+        for(int a=0; a < charsContour.size(); a++) {
+            for(int b=a+1; b < charsContour.size(); b++) {
+                // Check not added already
+                double eDist = cv::norm(centers[a] - centers[b]);
+                if(from == -1 || eDist < cv::norm(centers[from] - centers[to])) {
+                    if(groups.find(a) == groups.end()
+                       || std::find(groups[a].begin(), groups[a].end(), b) == groups[a].end()) {
+                        from = a;
+                        to = b;
+                    }
+                }
+            }
+        }
+
+        if(from != -1) {
+            groups[from].push_back(to);
+        }
+    }
+
+    // Prepare contours
+    std::vector<std::vector<cv::Point>> groupedContours;
+    std::vector<bool> visited(charsContour.size(), false);
+
+    // Add groups first
+    for(auto group : groups) {
+        if(!visited[group.first]) {
+            std::queue<int> indexQueue;
+            indexQueue.push(group.first);
+            std::vector<cv::Point> contour;
+            while(!indexQueue.empty()) {
+                int poll = indexQueue.front();
+                indexQueue.pop();
+                visited[poll] = true;
+                contour.insert(contour.end(), charsContour[poll].begin(), charsContour[poll].end());
+                if(groups.find(poll) != groups.end()) {
+                    for(int child : groups[poll]) {
+                        if(!visited[child]) {
+                            indexQueue.push(child);
+                        }
+                    }
+                }
+            }
+            groupedContours.push_back(contour);
+        }
+    }
+
+    // Add non-grouped contours
+    for(int i=0; i < charsContour.size(); i++) {
+        if(!visited[i]) {
+            groupedContours.push_back(charsContour[i]);
+        }
+    }
+    return groupedContours;
 }
