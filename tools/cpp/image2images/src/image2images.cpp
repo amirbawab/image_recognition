@@ -35,6 +35,7 @@ const std::string ALGO_MNIST =          "mnist";
 const std::string ALGO_SIZE =           "size";
 const std::string ALGO_FINDKNN =        "findKNN";
 const std::string ALGO_ERODE =          "erode";
+const std::string ALGO_BLUR =           "blur";
 
 /**
  * Print program usage to stdout
@@ -236,6 +237,13 @@ int main( int argc, char** argv ) {
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for (auto outputImage : outputImages) {
                     std::shared_ptr<Image> erodeImage = outputImage->erode(size);
+                    manipOutputImages.push_back(erodeImage);
+                }
+                outputImages = manipOutputImages;
+            } else if(algo == ALGO_BLUR) {
+                std::vector<std::shared_ptr<Image>> manipOutputImages;
+                for (auto outputImage : outputImages) {
+                    std::shared_ptr<Image> erodeImage = outputImage->blur();
                     manipOutputImages.push_back(erodeImage);
                 }
                 outputImages = manipOutputImages;

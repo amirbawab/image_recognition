@@ -415,3 +415,9 @@ std::vector<std::vector<cv::Point>> Image::_groupContours(int k) {
     }
     return groupedContours;
 }
+
+std::shared_ptr<Image> Image::blur() {
+    std::shared_ptr<Image> blurImage = _cloneImage();
+    cv::blur(*blurImage->getMat(), *blurImage->getMat(), cv::Size(2,2));
+    return blurImage;
+}
