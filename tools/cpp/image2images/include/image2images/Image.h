@@ -184,6 +184,12 @@ public:
     std::shared_ptr<Image> erode(int size);
 
     /**
+     * Blur image
+     * @return new image
+     */
+    std::shared_ptr<Image> blur();
+
+    /**
      * Recognize images
      * @param kNN
      * @return recognize images

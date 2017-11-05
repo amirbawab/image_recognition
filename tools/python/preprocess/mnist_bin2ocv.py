@@ -43,6 +43,14 @@ def ascii_show(image):
              row += '{0: <4}'.format(x)
          print row
 
+def rotate(matrix, degree):
+    if degree == 0:
+        return matrix
+    elif degree > 0:
+        return rotate(zip(*matrix[::-1]), degree-90)
+    else:
+        return rotate(zip(*matrix)[::-1], degree+90)
+
 def writeLine(ocvFile, item):
     label = item[0]
     if label == 1:
@@ -50,18 +58,31 @@ def writeLine(ocvFile, item):
     else:
         label = 11
     ocvFile.write("{} {}".format(label, 28))
+
+    # Build matrix
+    matrix = []
     for y in item[1]:
+        matrix.append([])
+        for x in y:
+             matrix[len(matrix)-1].insert(0, x)
+    matrix = rotate(matrix, -90)
+    for y in matrix:
+        row = ""
         for x in y:
             ocvFile.write(" {}".format(x))
 
-
 def ascii_show(image):
+    matrix = []
     for y in image:
-         row = ""
-         for x in y:
-             row += '{0: <4}'.format(x)
-         print row
-
+        matrix.append([])
+        for x in y:
+             matrix[len(matrix)-1].insert(0, x)
+    matrix = rotate(matrix, -90)
+    for y in matrix:
+        row = ""
+        for x in y:
+            row += "{0: <4}".format(x)
+        print row
 # Start
 ocvFile = open('emnist.ocv', 'w')
 mnistList = list(read())
