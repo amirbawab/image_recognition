@@ -18,8 +18,8 @@ import numpy as np
 
 def read(path = "."):
 
-    fname_img = os.path.join(path, 'emnist-letters-train-images-idx3-ubyte')
-    fname_lbl = os.path.join(path, 'emnist-letters-train-labels-idx1-ubyte')
+    fname_img = os.path.join(path, '/tmp/mnist/train-images-idx3-ubyte')
+    fname_lbl = os.path.join(path, '/tmp/mnist/train-labels-idx1-ubyte')
 
     # Load everything in some numpy arrays
     with open(fname_lbl, 'rb') as flbl:
@@ -36,13 +36,6 @@ def read(path = "."):
     for i in xrange(len(lbl)):
         yield get_img(i)
 
-def ascii_show(image):
-    for y in image:
-         row = ""
-         for x in y:
-             row += '{0: <4}'.format(x)
-         print row
-
 def rotate(matrix, degree):
     if degree == 0:
         return matrix
@@ -53,19 +46,12 @@ def rotate(matrix, degree):
 
 def writeLine(ocvFile, item):
     label = item[0]
-    if label == 1:
-        label = 10
-    else:
-        label = 11
     ocvFile.write("{} {}".format(label, 28))
-
-    # Build matrix
     matrix = []
     for y in item[1]:
         matrix.append([])
         for x in y:
-             matrix[len(matrix)-1].insert(0, x)
-    matrix = rotate(matrix, -90)
+             matrix[len(matrix)-1].append(x)
     for y in matrix:
         row = ""
         for x in y:
@@ -76,26 +62,23 @@ def ascii_show(image):
     for y in image:
         matrix.append([])
         for x in y:
-             matrix[len(matrix)-1].insert(0, x)
-    matrix = rotate(matrix, -90)
+             matrix[len(matrix)-1].append(x)
     for y in matrix:
         row = ""
         for x in y:
             row += "{0: <4}".format(x)
         print row
+
 # Start
 ocvFile = open('mnist.ocv', 'w')
 mnistList = list(read())
 total = 0
 for item in mnistList:
-    # `a` and `m` only
-    if item[0] == 1 or item[0] == 13:
-        total += 1
+    total += 1
 
 ocvFile.write("{}\n".format(total))
 for item in mnistList:
-    if item[0] == 1 or item[0] == 13:
-        writeLine(ocvFile, item)
-        #ascii_show(item[1])
-        ocvFile.write("\n")
+    writeLine(ocvFile, item)
+    #ascii_show(item[1])
+    ocvFile.write("\n")
 ocvFile.close()
