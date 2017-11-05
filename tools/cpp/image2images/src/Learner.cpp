@@ -7,7 +7,7 @@ void Learner::initKNN() {
     m_knn= cv::ml::KNearest::create();
     m_knn->setIsClassifier(true);
     m_knn->setAlgorithmType(cv::ml::KNearest::Types::BRUTE_FORCE);
-    m_knn->setDefaultK(5);
+    m_knn->setDefaultK(1);
 }
 
 std::pair<float, cv::Mat> Learner::_prepareImage(std::shared_ptr<Image> image) {
@@ -169,30 +169,65 @@ int Learner::_getLabel(std::vector<std::shared_ptr<Image>> images,
 
     std::vector<char> elements = algoFunc();
     std::vector<char> digits;
-    std::vector<char> operations;
+    std::vector<char> operators;
     for(char e : elements) {
         if(_isNum(e)) {
             digits.push_back(e);
         } else if(_isOperation(e)) {
-            operations.push_back(e);
+            operators.push_back(e);
         } else {
             std::cerr << "Error validating kNN: Unknown digit or operation" << std::endl;
             return -1;
         }
     }
 
-    if(digits.size() == 2 && operations.size() == 1) {
-        if(operations[0] == 'A') {
-            return digits[0] - '0' + digits[1] - '0';
-        } else if(operations[0] == 'M') {
-            return (digits[0] - '0') * (digits[1] - '0');
-        } else {
-            std::cout << "Error validation kNN: Unknown operation "<< operations[0] << std::endl;
-            return -1;
+    /**
+     * Best case, 2 digits and 1 operator
+     */
+    if(digits.size() == 2 && operators.size() == 1) {
+        if (operators[0] == 'A') {
+            return (digits[0] - '0') + (digits[1] - '0');
         }
-    } else {
-        std::cout << "WARNING: Image has " << digits.size() << " digit(s) and "
-                  << operations.size() << " operation(s)" << std::endl;
+        return (digits[0] - '0') * (digits[1] - '0');
+    }
+
+    /**
+     * Case of 3 digits.
+     *  {3, 3, d} => 3 * d
+     */
+    if(digits.size() == 3) {
+        if (digits[0] == '3' && digits[1] == '3') {
+            return 3 * (digits[2] - '0');
+        }
+        if (digits[0] == '3' && digits[2] == '3') {
+            return 3 * (digits[1] - '0');
+        }
+        if (digits[1] == '3' && digits[2] == '3') {
+            return 3 * (digits[0] - '0');
+        }
+        std::cout << "WARNING: Image has 3 digits not of the form: {3, 3, digit}" << std::endl;
         return -1;
     }
+
+    /**
+     * Case of 2 operators and 1 digit
+     * {M,M,d} => 3 * d
+     */
+    if(operators.size() == 2) {
+        if (operators[0] == 'M' && operators[1] == 'M') {
+            return 3 * (digits[0] - '0');
+        }
+        std::cout << "WARNING: Image has 2 operators not of the form: {M, M, digit}" << std::endl;
+        return -1;
+    }
+
+    /**
+     * Case of 3 operators
+     * {M,M,M} => 3 * 3
+     */
+    if(operators[0] == 'M' && operators[1] == 'M' && operators[2] == 'M') {
+        return 3*3;
+    }
+    std::cout << "WARNING: Image has 3 operators not of the form: {M, M, M}" << std::endl;
+    return -1;
 }
