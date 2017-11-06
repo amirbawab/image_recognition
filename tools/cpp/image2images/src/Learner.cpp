@@ -2,19 +2,21 @@
 #include <iostream>
 
 #define NUM_ELEMENTS 3;
+#define ENCODE_SIZE 28
+#define KNN_K 5
 
 void Learner::initKNN() {
     m_knn= cv::ml::KNearest::create();
     m_knn->setIsClassifier(true);
     m_knn->setAlgorithmType(cv::ml::KNearest::Types::BRUTE_FORCE);
-    m_knn->setDefaultK(1);
+    m_knn->setDefaultK(KNN_K);
 }
 
 std::pair<float, cv::Mat> Learner::_prepareImage(std::shared_ptr<Image> image) {
 
     // Make the image smaller
     cv::Mat smallMatrix;
-    cv::resize(*image->getMat(), smallMatrix, cv::Size(28, 28), 0, 0, cv::INTER_LINEAR);
+    cv::resize(*image->getMat(), smallMatrix, cv::Size(ENCODE_SIZE, ENCODE_SIZE), 0, 0, cv::INTER_LINEAR);
 
     // Convert matrix to float
     cv::Mat smallMatrixFloat;
@@ -79,7 +81,7 @@ bool Learner::trainKNN(std::string fileName) {
 char Learner::findKNN(std::shared_ptr<Image> image) {
     if(m_knn && m_knn->isTrained()) {
         cv::Mat small_char;
-        cv::resize(*image->getMat(), small_char, cv::Size(28, 28), 0, 0, cv::INTER_LINEAR);
+        cv::resize(*image->getMat(), small_char, cv::Size(ENCODE_SIZE, ENCODE_SIZE), 0, 0, cv::INTER_LINEAR);
 
         cv::Mat small_char_float;
         small_char.convertTo(small_char_float, CV_32FC1);

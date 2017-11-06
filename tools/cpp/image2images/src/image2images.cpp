@@ -330,7 +330,7 @@ int main( int argc, char** argv ) {
                     }
 
                 } else {
-                    fileName << ".tiff";
+                    fileName << ".png";
                     std::cout << ">> Generating image: " << fileName.str() << std::endl;
                     if(!cv::imwrite(fileName.str(), *outputImage->getMat())) {
                         std::cerr << "Error generating image: " << fileName.str() << std::endl;
