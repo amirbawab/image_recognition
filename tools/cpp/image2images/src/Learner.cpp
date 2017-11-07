@@ -3,7 +3,7 @@
 
 #define NUM_ELEMENTS 3
 #define ENCODE_SIZE 28
-#define KNN_K 1
+#define KNN_K 5
 
 void Learner::initKNN() {
     m_knn= cv::ml::KNearest::create();
@@ -107,8 +107,8 @@ char Learner::findKNN(std::shared_ptr<Image> image) {
 }
 
 void Learner::validateKNN(std::vector<std::shared_ptr<Image>> images, int id) {
+    std::vector<char> labels;
     int label = _getLabel(images, id, [&](){
-        std::vector<char> labels;
         for(auto image : images) {
             labels.push_back(findKNN(image));
         }
@@ -119,6 +119,9 @@ void Learner::validateKNN(std::vector<std::shared_ptr<Image>> images, int id) {
     } else {
         int realLabel = images[0]->getLabel();
         if(realLabel != label) {
+            std::cout << "WARNING: Bad guess for image: " << id << " with labels " << labels[0] << " "
+                      << labels[1] << " " << labels[2] << " resulting in " << label << " but expecting "
+                      << realLabel << std::endl;
             m_bad++;
         } else {
             m_good++;
