@@ -224,7 +224,7 @@ int Learner::_getLabel(std::vector<std::shared_ptr<Image>> images, int id,
                 return (digits[(i+1)%3] -'0') + (digits[(i+2)%3]-'0');
             }
         }
-        std::cout << "WARNING: Image: " << id << " has 3 digits does not contain {3, 4, 9} but is of the form "
+        std::cout << "WARNING: Image: " << id << " has 3 digits of the form "
                   << "{" << digits[0] << ", " << digits[1] << ", " << digits[2] << "}" << std::endl;
         return -1;
     }
@@ -242,7 +242,7 @@ int Learner::_getLabel(std::vector<std::shared_ptr<Image>> images, int id,
         if(operators[0] == 'A' && operators[1] == 'A') {
             return 9 + (digits[0] - '0');
         }
-        std::cout << "WARNING: Image " << id << " has 2 operators not of the form: {M, M, digit} but of the form "
+        std::cout << "WARNING: Image " << id << " has 2 operators of the form "
         << "{" << operators[0] << ", " << operators[1] << ", " << digits[0] << "}" << std::endl;
         return -1;
     }
@@ -254,7 +254,7 @@ int Learner::_getLabel(std::vector<std::shared_ptr<Image>> images, int id,
     if(operators[0] == 'M' && operators[1] == 'M' && operators[2] == 'M') {
         return 3*3;
     }
-    std::cout << "WARNING: Image has 3 operators not of the form: {M, M, M} but of the form "
+    std::cout << "WARNING: Image has 3 operators of the form "
     << "{" << operators[0] << ", " << operators[1] << ", " << operators[2] << "}" << std::endl;
     return -1;
 }
