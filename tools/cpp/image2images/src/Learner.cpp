@@ -1,7 +1,7 @@
 #include <image2images/Learner.h>
 #include <iostream>
 
-#define NUM_ELEMENTS 3;
+#define NUM_ELEMENTS 3
 #define ENCODE_SIZE 28
 #define KNN_K 5
 

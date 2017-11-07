@@ -315,12 +315,43 @@ std::vector<std::vector<cv::Point>> Image::_charsControus() {
 std::vector<std::vector<cv::Point>> Image::_groupContours(int k) {
     std::vector<std::vector<cv::Point>> charsContour = _charsControus();
 
-    // Check if already has at most k contours
-    if(charsContour.size() <= k) {
+    // Check if already has k contours
+    if(charsContour.size() == k) {
         return charsContour;
     }
 
-    // Compute center of each contour
+    // If has less then k, then apply k means
+    if(charsContour.size() < k) {
+
+        // Get all non-zero pixels
+        std::vector<cv::Point2f> points;
+        for(int row=0; row < m_mat->rows; row++) {
+            for(int col=0; col < m_mat->cols; col++) {
+                if(m_mat->at<uchar>(row, col) != 0) {
+                    points.push_back(cv::Point2f(col, row));
+                }
+            }
+        }
+
+        // Prepare the contour vector
+        std::vector<std::vector<cv::Point>> kContours(NUM_OBJECTS);
+
+        // Apply k means
+        cv::Mat labels;
+        cv::Mat centers;
+        cv::kmeans(points, NUM_OBJECTS, labels,
+                   cv::TermCriteria( cv::TermCriteria::EPS+cv::TermCriteria::COUNT, 50, 1.0), 3,
+                   cv::KMEANS_PP_CENTERS, centers);
+        for(int i=0; i < points.size(); i++) {
+            kContours[labels.at<uchar>(i, 0)].push_back(points[i]);
+        }
+        return kContours;
+    }
+
+    // If has more than k, then
+    // compute center of each contour
+    // and group the close ones until
+    // there are exactly k groups
     std::vector<cv::Point> centers;
     for(int i=0; i < charsContour.size(); i++) {
         cv::Moments mmts = cv::moments(charsContour[i]);
