@@ -247,17 +247,25 @@ std::vector<std::shared_ptr<Image>> Image::mnist() {
     std::vector<std::shared_ptr<Image>> mnistVector;
 
      // Rotate images
-    std::shared_ptr<Image> LRImage = rotate(45);
-    std::shared_ptr<Image> LHRImage = rotate(22);
-    std::shared_ptr<Image> RHRImage = rotate(-22);
-    std::shared_ptr<Image> RRImage = rotate(-45);
+    std::shared_ptr<Image> LRImage1 = rotate(45);
+    std::shared_ptr<Image> LRImage2 = rotate(30);
+    std::shared_ptr<Image> LRImage3 = rotate(20);
+    std::shared_ptr<Image> LRImage4 = rotate(10);
+    std::shared_ptr<Image> RRImage4 = rotate(-10);
+    std::shared_ptr<Image> RRImage3 = rotate(-20);
+    std::shared_ptr<Image> RRImage2 = rotate(-30);
+    std::shared_ptr<Image> RRImage1 = rotate(-45);
 
      // Add new images
-    mnistVector.push_back(LRImage);
-    mnistVector.push_back(LHRImage);
+    mnistVector.push_back(LRImage1);
+    mnistVector.push_back(LRImage2);
+    mnistVector.push_back(LRImage3);
+    mnistVector.push_back(LRImage4);
     mnistVector.push_back(shared_from_this());
-    mnistVector.push_back(RHRImage);
-    mnistVector.push_back(RRImage);
+    mnistVector.push_back(RRImage4);
+    mnistVector.push_back(RRImage3);
+    mnistVector.push_back(RRImage2);
+    mnistVector.push_back(RRImage1);
     return mnistVector;
 }
 
