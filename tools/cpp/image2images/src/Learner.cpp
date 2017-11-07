@@ -232,10 +232,15 @@ int Learner::_getLabel(std::vector<std::shared_ptr<Image>> images, int id,
     /**
      * Case of 2 operators and 1 digit
      * {M,M,d} => 3 * d
+     * {A,A,d} => 9 + d
      */
     if(operators.size() == 2) {
         if (operators[0] == 'M' && operators[1] == 'M') {
             return 3 * (digits[0] - '0');
+        }
+
+        if(operators[0] == 'A' && operators[1] == 'A') {
+            return 9 + (digits[0] - '0');
         }
         std::cout << "WARNING: Image " << id << " has 2 operators not of the form: {M, M, digit} but of the form "
         << "{" << operators[0] << ", " << operators[1] << ", " << digits[0] << "}" << std::endl;
