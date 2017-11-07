@@ -276,7 +276,7 @@ int main( int argc, char** argv ) {
                     std::cout << "Image ID: " << outputImage->getId() << " >> " << element << std::endl;
                 }
             } else if(algo == ALGO_VALIDATEKNN) {
-                g_learner.validateKNN(outputImages);
+                g_learner.validateKNN(outputImages, progress);
             } else if(algo == ALGO_RUNKNN) {
                 g_learner.runKNN("/tmp/result_knn.csv", progress+1, outputImages);
             } else {

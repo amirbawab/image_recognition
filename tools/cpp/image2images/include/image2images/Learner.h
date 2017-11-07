@@ -35,7 +35,7 @@ private:
      * Validate kNN
      * @return result
      */
-    int _getLabel(std::vector<std::shared_ptr<Image>> images, std::function<std::vector<char>()> algoFunc);
+    int _getLabel(std::vector<std::shared_ptr<Image>> images, int id, std::function<std::vector<char>()> algoFunc);
 public:
 
     /**
@@ -65,7 +65,7 @@ public:
     /**
      * Validate images
      */
-    void validateKNN(std::vector<std::shared_ptr<Image>> images);
+    void validateKNN(std::vector<std::shared_ptr<Image>> images, int id);
 
     /**
      * Write kNN results to file

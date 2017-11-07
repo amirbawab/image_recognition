@@ -3,7 +3,7 @@
 
 #define NUM_ELEMENTS 3
 #define ENCODE_SIZE 28
-#define KNN_K 5
+#define KNN_K 1
 
 void Learner::initKNN() {
     m_knn= cv::ml::KNearest::create();
@@ -106,8 +106,8 @@ char Learner::findKNN(std::shared_ptr<Image> image) {
     return '\u0000';
 }
 
-void Learner::validateKNN(std::vector<std::shared_ptr<Image>> images) {
-    int label = _getLabel(images, [&](){
+void Learner::validateKNN(std::vector<std::shared_ptr<Image>> images, int id) {
+    int label = _getLabel(images, id, [&](){
         std::vector<char> labels;
         for(auto image : images) {
             labels.push_back(findKNN(image));
@@ -132,7 +132,7 @@ void Learner::runKNN(std::string fileName, int id, std::vector<std::shared_ptr<I
     std::ofstream outputFile(fileName, std::ios::app);
     if(outputFile.is_open()) {
         outputFile << id << ",";
-        int label = _getLabel(images, [&](){
+        int label = _getLabel(images, id, [&](){
             std::vector<char> labels;
             for(auto image : images) {
                 labels.push_back(findKNN(image));
@@ -158,13 +158,13 @@ bool Learner::_isOperation(char a) {
     return a == 'A' || a == 'M';
 }
 
-int Learner::_getLabel(std::vector<std::shared_ptr<Image>> images,
+int Learner::_getLabel(std::vector<std::shared_ptr<Image>> images, int id,
                        std::function<std::vector<char>()> algoFunc) {
 
     // If wrong number of elements
     int numElements = NUM_ELEMENTS;
     if(images.size() != numElements) {
-        std::cout << "WARNING: Image has " << images.size()
+        std::cout << "WARNING: Image: " << id << " has " << images.size()
                   << " instead of " << numElements << std::endl;
         return -1;
     }
@@ -195,19 +195,34 @@ int Learner::_getLabel(std::vector<std::shared_ptr<Image>> images,
 
     /**
      * Case of 3 digits.
-     *  {3, 3, d} => 3 * d
+     *  {3, any, any} => any * any
+     *  {4, any, any} => any + any
+     *  {9, any, any} => any + any
      */
     if(digits.size() == 3) {
-        if (digits[0] == '3' && digits[1] == '3') {
-            return 3 * (digits[2] - '0');
+
+        // Has 3
+        for(int i=0; i < digits.size(); i++) {
+            if(digits[i] == '3') {
+                return (digits[(i+1)%3] -'0') * (digits[(i+2)%3]-'0');
+            }
         }
-        if (digits[0] == '3' && digits[2] == '3') {
-            return 3 * (digits[1] - '0');
+
+        // Has 9
+        for(int i=0; i < digits.size(); i++) {
+            if(digits[i] == '9') {
+                return (digits[(i+1)%3] -'0') + (digits[(i+2)%3]-'0');
+            }
         }
-        if (digits[1] == '3' && digits[2] == '3') {
-            return 3 * (digits[0] - '0');
+
+        // Has 4
+        for(int i=0; i < digits.size(); i++) {
+            if(digits[i] == '4') {
+                return (digits[(i+1)%3] -'0') + (digits[(i+2)%3]-'0');
+            }
         }
-        std::cout << "WARNING: Image has 3 digits not of the form: {3, 3, digit}" << std::endl;
+        std::cout << "WARNING: Image: " << id << " has 3 digits does not contain {3, 4, 9} but is of the form "
+                  << "{" << digits[0] << ", " << digits[1] << ", " << digits[2] << "}" << std::endl;
         return -1;
     }
 
@@ -219,7 +234,8 @@ int Learner::_getLabel(std::vector<std::shared_ptr<Image>> images,
         if (operators[0] == 'M' && operators[1] == 'M') {
             return 3 * (digits[0] - '0');
         }
-        std::cout << "WARNING: Image has 2 operators not of the form: {M, M, digit}" << std::endl;
+        std::cout << "WARNING: Image " << id << " has 2 operators not of the form: {M, M, digit} but of the form "
+        << "{" << operators[0] << ", " << operators[1] << ", " << digits[0] << "}" << std::endl;
         return -1;
     }
 
@@ -230,6 +246,7 @@ int Learner::_getLabel(std::vector<std::shared_ptr<Image>> images,
     if(operators[0] == 'M' && operators[1] == 'M' && operators[2] == 'M') {
         return 3*3;
     }
-    std::cout << "WARNING: Image has 3 operators not of the form: {M, M, M}" << std::endl;
+    std::cout << "WARNING: Image has 3 operators not of the form: {M, M, M} but of the form "
+    << "{" << operators[0] << ", " << operators[1] << ", " << operators[2] << "}" << std::endl;
     return -1;
 }
