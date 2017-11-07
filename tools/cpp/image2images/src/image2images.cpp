@@ -34,7 +34,6 @@ const std::string ALGO_SPLIT =          "split";
 const std::string ALGO_ROTATE =         "rotate";
 const std::string ALGO_MNIST =          "mnist";
 const std::string ALGO_SIZE =           "size";
-const std::string ALGO_ERODE =          "erode";
 const std::string ALGO_BLUR =           "blur";
 const std::string ALGO_FINDKNN =        "findKNN";
 const std::string ALGO_VALIDATEKNN =    "validateKNN";
@@ -51,14 +50,13 @@ void printUsage() {
             << "                     - " << ALGO_BINARY << "{1..255}: Convert image to binary with the "
                                                         << "provided threshold" << std::endl
             << "                     - " << ALGO_CLEAN << ": Clean noise in image" << std::endl
-            << "                     - " << ALGO_PERMUTATION << ": Generate new permutation images" << std::endl
+            << "                     - " << ALGO_PERMUTATION << ": Generate new permutation images - DEPRECATED" << std::endl
             << "                     - " << ALGO_CONTOUR << ": Draw contour around objects" << std::endl
-            << "                     - " << ALGO_ALIGN << ": Align detected elements in image" << std::endl
+            << "                     - " << ALGO_ALIGN << "{1,3}: Align detected elements in image" << std::endl
             << "                     - " << ALGO_SPLIT << ": Generate an image per detected element" << std::endl
             << "                     - " << ALGO_ROTATE << "{1..360}: Rotate images by the provided angle" << std::endl
             << "                     - " << ALGO_MNIST << ": Algorithm optimized for MNIST dataset" << std::endl
             << "                     - " << ALGO_SIZE << "{1..N}: Set image size" << std::endl
-            << "                     - " << ALGO_ERODE << "{1..N}: Erode element" << std::endl
             << "                     - " << ALGO_FINDKNN << ": Recognize image using kNN" << std::endl
             << "                     - " << ALGO_VALIDATEKNN << ": Validate the input. "
                                                             << "Must use only if labels are known" << std::endl
@@ -211,10 +209,11 @@ int main( int argc, char** argv ) {
                     manipOutputImages.push_back(cleanImage);
                 }
                 outputImages = manipOutputImages;
-            } else if(algo == ALGO_ALIGN) {
+            } else if(algo.rfind(ALGO_ALIGN, 0) == 0 && algo.size() > ALGO_ALIGN.size()) {
+                int val = atoi(algo.substr(ALGO_ALIGN.size(), algo.size() - ALGO_ALIGN.size()).c_str());
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for (auto outputImage : outputImages) {
-                    std::shared_ptr<Image> align = outputImage->align();
+                    std::shared_ptr<Image> align = outputImage->align(val);
                     manipOutputImages.push_back(align);
                 }
                 outputImages = manipOutputImages;
@@ -253,14 +252,6 @@ int main( int argc, char** argv ) {
                 for (auto outputImage : outputImages) {
                     std::shared_ptr<Image> scaledImage = outputImage->size(side);
                     manipOutputImages.push_back(scaledImage);
-                }
-                outputImages = manipOutputImages;
-            } else if(algo.rfind(ALGO_ERODE, 0) == 0 && algo.size() > ALGO_ERODE.size()) {
-                int size = atoi(algo.substr(ALGO_ERODE.size(), algo.size() - ALGO_ERODE.size()).c_str());
-                std::vector<std::shared_ptr<Image>> manipOutputImages;
-                for (auto outputImage : outputImages) {
-                    std::shared_ptr<Image> erodeImage = outputImage->erode(size);
-                    manipOutputImages.push_back(erodeImage);
                 }
                 outputImages = manipOutputImages;
             } else if(algo == ALGO_BLUR) {

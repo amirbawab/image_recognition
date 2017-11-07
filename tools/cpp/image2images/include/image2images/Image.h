@@ -121,9 +121,10 @@ public:
 
     /**
      * Align objects
+     * @param k Elements to align
      * @return Image pointer
      */
-    std::shared_ptr<Image> align();
+    std::shared_ptr<Image> align(int k);
 
     /**
      * Close windows on input
@@ -175,13 +176,6 @@ public:
      * @return new image
      */
     std::shared_ptr<Image> size(int side);
-
-    /**
-     * Erode image
-     * @param size
-     * @return new image
-     */
-    std::shared_ptr<Image> erode(int size);
 
     /**
      * Blur image

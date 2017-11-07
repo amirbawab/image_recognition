@@ -71,9 +71,9 @@ std::shared_ptr<Image> Image::binarize() {
     return binImage;
 }
 
-std::shared_ptr<Image> Image::align() {
+std::shared_ptr<Image> Image::align(int k) {
     std::vector<int> indices;
-    std::vector<std::vector<cv::Point>> charsContour = _groupContours(NUM_OBJECTS);
+    std::vector<std::vector<cv::Point>> charsContour = _groupContours(k);
     for(int i=0; i < charsContour.size(); i++) {
         indices.push_back(i);
     }
@@ -276,13 +276,6 @@ std::shared_ptr<Image> Image::_cloneImage() {
 std::shared_ptr<Image> Image::size(int side) {
     std::shared_ptr<Image> image = _cloneImage();
     cv::resize(*image->getMat(), *image->getMat(), cv::Size(side, side));
-    return image;
-}
-
-std::shared_ptr<Image> Image::erode(int size) {
-    std::shared_ptr<Image> image = _cloneImage();
-    cv::erode(*image->getMat(), *image->getMat(), cv::getStructuringElement(
-            cv::MORPH_ELLIPSE, cv::Size(size, size)));
     return image;
 }
 
