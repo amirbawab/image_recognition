@@ -320,12 +320,12 @@ std::vector<std::vector<cv::Point>> Image::_groupContours(int k) {
         }
 
         // Prepare the contour vector
-        std::vector<std::vector<cv::Point>> kContours(NUM_OBJECTS);
+        std::vector<std::vector<cv::Point>> kContours(k);
 
         // Apply k means
         cv::Mat labels;
         cv::Mat centers;
-        cv::kmeans(points, NUM_OBJECTS, labels,
+        cv::kmeans(points, k, labels,
                    cv::TermCriteria( cv::TermCriteria::EPS+cv::TermCriteria::COUNT, 50, 1.0), 3,
                    cv::KMEANS_PP_CENTERS, centers);
         for(int i=0; i < points.size(); i++) {
