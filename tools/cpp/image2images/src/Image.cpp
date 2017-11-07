@@ -274,32 +274,6 @@ std::shared_ptr<Image> Image::erode(int size) {
     return image;
 }
 
-std::vector<charMatch> Image::extractChars() {
-    std::vector<std::vector<cv::Point>> contours = _groupContours(1);
-    std::vector<charMatch> result;
-
-    for (int i(0); i < contours.size(); ++i) {
-        cv::Rect bounding_box(cv::boundingRect(contours[i]));
-//        int PADDING(2);
-//        bounding_box.x -= PADDING;
-//        bounding_box.y -= PADDING;
-//        bounding_box.width += PADDING * 2;
-//        bounding_box.height += PADDING * 2;
-
-        charMatch match;
-        cv::Point2i center(bounding_box.x + bounding_box.width / 2, bounding_box.y + bounding_box.height / 2);
-        match.position = center;
-        match.image = (*m_mat)(bounding_box);
-        result.push_back(match);
-    }
-
-    std::sort(begin(result), end(result), [](charMatch const& a, charMatch const& b) -> bool {
-        return a.position.x < b.position.x;
-    });
-
-    return result;
-}
-
 std::shared_ptr<cv::Mat> Image::_cloneMat() {
     std::shared_ptr<cv::Mat> mat = std::make_shared<cv::Mat>(getSide(), getSide(), m_mat->type());
     m_mat->copyTo(*mat);

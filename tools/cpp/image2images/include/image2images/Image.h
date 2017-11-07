@@ -190,12 +190,6 @@ public:
     std::shared_ptr<Image> blur();
 
     /**
-     * Extract characters
-     * @return vector of matched chars
-     */
-    std::vector<charMatch> extractChars();
-
-    /**
      * Get matrix side
      * @return side
      */
