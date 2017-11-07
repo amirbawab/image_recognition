@@ -245,14 +245,18 @@ std::shared_ptr<Image> Image::rotate(int angle) {
 std::vector<std::shared_ptr<Image>> Image::mnist() {
     // Prepare mnist vector
     std::vector<std::shared_ptr<Image>> mnistVector;
-    mnistVector.push_back(shared_from_this());
 
      // Rotate images
     std::shared_ptr<Image> LRImage = rotate(45);
+    std::shared_ptr<Image> LHRImage = rotate(22);
+    std::shared_ptr<Image> RHRImage = rotate(-22);
     std::shared_ptr<Image> RRImage = rotate(-45);
 
      // Add new images
     mnistVector.push_back(LRImage);
+    mnistVector.push_back(LHRImage);
+    mnistVector.push_back(shared_from_this());
+    mnistVector.push_back(RHRImage);
     mnistVector.push_back(RRImage);
     return mnistVector;
 }
