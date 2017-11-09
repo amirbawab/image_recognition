@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/justin/image_recognition/tools/cpp/neuralnetwork/src/neuralnetwork.cpp
+iostream
+-
+fstream
+-
+unistd.h
+-
+getopt.h
+-
+
