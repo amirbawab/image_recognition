@@ -232,10 +232,11 @@ int main( int argc, char** argv ) {
                     manipOutputImages.insert(manipOutputImages.end(), split.begin(), split.end());
                 }
                 outputImages = manipOutputImages;
-            } else if(algo == ALGO_CONTOUR) {
+            } else if(algo.rfind(ALGO_CONTOUR, 0) == 0 && algo.size() > ALGO_CONTOUR.size()) {
+                int numContours = atoi(algo.substr(ALGO_CONTOUR.size(), algo.size() - ALGO_CONTOUR.size()).c_str());
                 std::vector<std::shared_ptr<Image>> manipOutputImages;
                 for (auto outputImage : outputImages) {
-                    std::shared_ptr<Image> contourImage = outputImage->drawContour();
+                    std::shared_ptr<Image> contourImage = outputImage->drawContour(numContours);
                     manipOutputImages.push_back(contourImage);
                 }
                 outputImages = manipOutputImages;

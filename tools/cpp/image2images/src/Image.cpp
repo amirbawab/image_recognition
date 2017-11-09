@@ -97,13 +97,13 @@ std::shared_ptr<Image> Image::cleanNoise() {
     return cleanImage;
 }
 
-std::shared_ptr<Image> Image::drawContour() {
+std::shared_ptr<Image> Image::drawContour(int k) {
 
     // Clone current image
     std::shared_ptr<Image> contourImage = _cloneImage();
 
     // Find contours
-    std::vector<std::vector<cv::Point>> charsContrours = contourImage->_groupContours(NUM_OBJECTS);
+    std::vector<std::vector<cv::Point>> charsContrours = contourImage->_groupContours(k);
 
     // Loop on each object
     for (size_t i=0; i<charsContrours.size(); i++) {

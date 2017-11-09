@@ -110,7 +110,7 @@ public:
     /**
      * Draw contour around objects
      */
-    std::shared_ptr<Image> drawContour();
+    std::shared_ptr<Image> drawContour(int k);
 
     /**
      * Recreate matrices
