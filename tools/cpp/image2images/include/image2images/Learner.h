@@ -68,6 +68,11 @@ public:
     void validateKNN(std::vector<std::shared_ptr<Image>> images, int id);
 
     /**
+     * Validate chars
+     */
+    void validateCNN(std::vector<char> labels, int realLabel, int id);
+
+    /**
      * Write kNN results to file
      * @param fileName
      * @param id

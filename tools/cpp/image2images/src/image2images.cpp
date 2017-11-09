@@ -15,6 +15,7 @@ std::vector<std::string> g_algos;
 std::string g_inputFile;
 std::string g_outputDir;
 std::string g_knnFile;
+std::string g_cnnFile;
 unsigned int g_number = 1;
 unsigned int g_offset = 0;
 bool g_display = false;
@@ -38,6 +39,7 @@ const std::string ALGO_BLUR =           "blur";
 const std::string ALGO_FINDKNN =        "findKNN";
 const std::string ALGO_VALIDATEKNN =    "validateKNN";
 const std::string ALGO_RUNKNN =         "runKNN";
+const std::string ALGO_VALIDATECNN =    "validateCNN";
 
 /**
  * Print program usage to stdout
@@ -58,6 +60,7 @@ void printUsage() {
             << "                     - " << ALGO_MNIST << ": Algorithm optimized for MNIST dataset" << std::endl
             << "                     - " << ALGO_SIZE << "{1..N}: Set image size" << std::endl
             << "                     - " << ALGO_FINDKNN << ": Recognize image using kNN" << std::endl
+            << "                     - " << ALGO_VALIDATECNN << ": Validate CNN from CNN input file" << std::endl
             << "                     - " << ALGO_VALIDATEKNN << ": Validate the input. "
                                                             << "Must use only if labels are known" << std::endl
             << "                     - " << ALGO_RUNKNN << ": Write kNN results to file. "
@@ -67,6 +70,7 @@ void printUsage() {
             << "    -M, --cmatrix    Same as --matrix but all in one file" << std::endl
             << "    -d, --display    Show images in windows" << std::endl
             << "    -s, --offset     Offset/Starting image" << std::endl
+            << "    -c, --cnn        CNN file (Format: 1 2 A)" << std::endl
             << "    -n, --number     Number of images to show" << std::endl
             << "    -k, --knn        Path for the kNN file" << std::endl
             << "    -h, --help       Display this help message" << std::endl;
@@ -87,6 +91,7 @@ void initParams(int argc, char *argv[]) {
             {"display",   no_argument,       0, 'd'},
             {"matrix",   no_argument,       0, 'm'},
             {"cmatrix",   no_argument,       0, 'M'},
+            {"cnn",   required_argument,       0, 'c'},
             {"knn",   required_argument,       0, 'k'},
             {"help",   no_argument,       0, 'h'},
             {0, 0,                        0, 0}
@@ -94,7 +99,7 @@ void initParams(int argc, char *argv[]) {
 
     int optionIndex = 0;
     int c;
-    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dmk:M", longOptions, &optionIndex)) != -1) {
+    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dmk:Mc:", longOptions, &optionIndex)) != -1) {
         switch (c) {
             case 'i':
                 g_inputFile = optarg;
@@ -122,6 +127,9 @@ void initParams(int argc, char *argv[]) {
                 break;
             case 'k':
                 g_knnFile = optarg;
+                break;
+            case 'c':
+                g_cnnFile = optarg;
                 break;
             case 'h':
             default:
@@ -154,6 +162,12 @@ int main( int argc, char** argv ) {
     if(!file.read(g_inputFile, g_number + g_offset)) {
         std::cerr << "Error opening input file: " << g_inputFile << std::endl;
         return CODE_ERROR;
+    }
+
+    // Read cnn file
+    std::ifstream cnnFile;
+    if(!g_cnnFile.empty()) {
+        cnnFile.open(g_cnnFile);
     }
 
     // Clear tmp file for cmatrix
@@ -266,6 +280,38 @@ int main( int argc, char** argv ) {
                 for (auto outputImage : outputImages) {
                     char element = g_learner.findKNN(outputImage);
                     std::cout << "Image ID: " << outputImage->getId() << " >> " << element << std::endl;
+                }
+            } else if(algo == ALGO_VALIDATECNN) {
+                if(cnnFile.is_open()) {
+                    for (auto outputImage : outputImages) {
+                        int a, b, c;
+                        cnnFile >> a >> b >> c;
+                        std::vector<char> labels;
+                        if(a < 10) {
+                            labels.push_back((char)(a+'0'));
+                        } else if(a == 10) {
+                            labels.push_back('A');
+                        } else {
+                            labels.push_back('M');
+                        }
+                        if(b < 10) {
+                            labels.push_back((char)(b+'0'));
+                        } else if(b == 10) {
+                            labels.push_back('A');
+                        } else {
+                            labels.push_back('M');
+                        }
+                        if(c < 10) {
+                            labels.push_back((char)(c+'0'));
+                        } else if(c == 10) {
+                            labels.push_back('A');
+                        } else {
+                            labels.push_back('M');
+                        }
+                        g_learner.validateCNN(labels, outputImage->getLabel(), progress);
+                    }
+                } else {
+                    std::cerr << "Error: CNN file not open" << std::endl;
                 }
             } else if(algo == ALGO_VALIDATEKNN) {
                 g_learner.validateKNN(outputImages, progress);

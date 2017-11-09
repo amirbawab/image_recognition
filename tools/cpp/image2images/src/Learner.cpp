@@ -106,6 +106,27 @@ char Learner::findKNN(std::shared_ptr<Image> image) {
     return '\u0000';
 }
 
+void Learner::validateCNN(std::vector<char> labels, int realLabel, int id) {
+    int label = _getLabel(std::vector<std::shared_ptr<Image>>(NUM_ELEMENTS, nullptr), id, [&](){
+       return labels;
+    });
+
+    if(label == -1) {
+        m_bad++;
+    } else {
+        if(realLabel != label) {
+            std::cout << "WARNING: Bad guess for image: " << id << " with labels " << labels[0] << " "
+                      << labels[1] << " " << labels[2] << " resulting in " << label << " but expecting "
+                      << realLabel << std::endl;
+            m_bad++;
+        } else {
+            m_good++;
+        }
+    }
+    std::cout << ">>>> Good: " << m_good << ", Bad: " << m_bad << ", Total: " << m_bad+m_good
+              << ", Accuracy: " << (double) m_good / (m_good+m_bad) << std::endl;
+}
+
 void Learner::validateKNN(std::vector<std::shared_ptr<Image>> images, int id) {
     std::vector<char> labels;
     int label = _getLabel(images, id, [&](){
