@@ -3,10 +3,12 @@
 #include <functional>
 #include <image2images/File.h>
 #include <image2images/Image.h>
+#include <neuralnetwork/NeuralNetwork.h>
 
 class Learner {
 private:
     cv::Ptr<cv::ml::KNearest> m_knn;
+    std::shared_ptr<Network> m_network;
     int m_good = 0;
     int m_bad = 0;
 
@@ -37,6 +39,18 @@ private:
      */
     int _getLabel(std::vector<std::shared_ptr<Image>> images, int id, std::function<std::vector<char>()> algoFunc);
 public:
+
+    /**
+     * Initialize Neural Network
+     */
+    void initNN();
+
+    /**
+     * Train neural network
+     * @param fileName
+     * @return
+     */
+    bool trainNN(std::string fileName);
 
     /**
      * Initialize kNN
@@ -71,6 +85,11 @@ public:
      * Validate chars
      */
     void validateCNN(std::vector<char> labels, int realLabel, int id);
+
+    /**
+     * Validate chars
+     */
+    void validateNN(std::shared_ptr<Image> image, int id);
 
     /**
      * Write kNN results to file

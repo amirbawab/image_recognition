@@ -3,6 +3,7 @@
 
 #define NUM_ELEMENTS 3
 #define ENCODE_SIZE 28
+#define NET_INPUT_SIZE 28
 #define KNN_K 5
 
 void Learner::initKNN() {
@@ -25,6 +26,78 @@ std::pair<float, cv::Mat> Learner::_prepareImage(std::shared_ptr<Image> image) {
     // Make matrix flat
     cv::Mat smallMatrixFlat(smallMatrixFloat.reshape(1, 1));
     return std::pair<float, cv::Mat>(static_cast<float>(image->getLabel()), smallMatrixFlat);
+}
+
+int getLabelOfIndex(int i) {
+    static std::vector<int> labels;
+    if(labels.empty()) {
+        std::set<int> labelsSet;
+        for(int a=0; a < 10; a++) {
+            for(int b=0; b < 10; b++) {
+                labelsSet.insert(a * b);
+                labelsSet.insert(a + b);
+            }
+        }
+        std::copy(labelsSet.begin(), labelsSet.end(), std::back_inserter(labels));
+        std::sort(labels.begin(), labels.end());
+    }
+    return labels[i];
+}
+
+int getIndexOfLabel(int l) {
+    static std::vector<int> labels;
+    if(labels.empty()) {
+        std::set<int> labelsSet;
+        for(int a=0; a < 10; a++) {
+            for(int b=0; b < 10; b++) {
+                labelsSet.insert(a * b);
+                labelsSet.insert(a + b);
+            }
+        }
+        std::copy(labelsSet.begin(), labelsSet.end(), std::back_inserter(labels));
+        std::sort(labels.begin(), labels.end());
+    }
+    auto pos = std::find(labels.begin(), labels.end(), l);
+    if(pos == labels.end()) {
+        return -1;
+    } else {
+        return std::distance(labels.begin(), pos);
+    }
+}
+
+bool Learner::trainNN(std::string fileName) {
+
+    std::cout << ">> Loading training images" << std::endl;
+    File nnFile;
+    if(nnFile.read(fileName, 0)) {
+
+        // Extract features
+        std::cout << ">> Processing training images ..." << std::endl;
+        std::vector<std::vector<int>> X;
+        std::vector<std::vector<int>> Y;
+        for(int imgId=0; imgId < nnFile.getSize(); imgId++) {
+            std::shared_ptr<Image> image = nnFile.getImage(imgId)->size(NET_INPUT_SIZE);
+            std::vector<int> pixels;
+            for(int row=0; row < image->getMat()->rows; row++) {
+                for(int col=0; col < image->getMat()->cols; col++) {
+                    pixels.push_back((int)image->getMat()->at<uchar>(row, col));
+                }
+            }
+            X.push_back(pixels);
+            std::vector<int> labels(40, 0);
+            labels[getIndexOfLabel(image->getLabel())] = 1;
+            Y.push_back(labels);
+        }
+
+        // Train kNN
+        std::cout << ">> Started training NN ..." << std::endl;
+        m_network->train(X, Y);
+
+        return true;
+    } else {
+        std::cerr << "Error opening training file: " << fileName << std::endl;
+    }
+    return false;
 }
 
 bool Learner::trainKNN(std::string fileName) {
@@ -106,6 +179,14 @@ char Learner::findKNN(std::shared_ptr<Image> image) {
     return '\u0000';
 }
 
+void Learner::initNN() {
+    m_network = std::make_shared<Network>();
+    m_network->addLayer(NET_INPUT_SIZE * NET_INPUT_SIZE);
+    m_network->addLayer(6);
+    m_network->addLayer(2);
+    m_network->addLayer(40);
+}
+
 void Learner::validateCNN(std::vector<char> labels, int realLabel, int id) {
     int label = _getLabel(std::vector<std::shared_ptr<Image>>(NUM_ELEMENTS, nullptr), id, [&](){
        return labels;
@@ -125,6 +206,36 @@ void Learner::validateCNN(std::vector<char> labels, int realLabel, int id) {
     }
     std::cout << ">>>> Good: " << m_good << ", Bad: " << m_bad << ", Total: " << m_bad+m_good
               << ", Accuracy: " << (double) m_good / (m_good+m_bad) << std::endl;
+}
+
+void Learner::validateNN(std::shared_ptr<Image> img, int id) {
+    std::shared_ptr<Image> image = img->size(NET_INPUT_SIZE);
+    std::vector<int> pixels;
+    for(int row=0; row < image->getMat()->rows; row++) {
+        for(int col=0; col < image->getMat()->cols; col++) {
+            pixels.push_back((int)image->getMat()->at<uchar>(row, col));
+        }
+    }
+
+    // Print prediction
+    std::vector<double> oneVsAll = m_network->predict(pixels);
+    int max = 0;
+    for(int i=1; i < oneVsAll.size(); i++) {
+        if(oneVsAll[i] > oneVsAll[max]) {
+            max = i;
+        }
+    }
+
+    int realLabel = image->getLabel();
+    if(realLabel != getLabelOfIndex(max)) {
+        std::cout << "WARNING: Bad guess for image: " << id << " resulting in " << getLabelOfIndex(max) << " but expecting "
+                  << realLabel << std::endl;
+        m_bad++;
+    } else {
+        m_good++;
+    }
+    std::cout << ">>>> Good: " << m_good << ", Bad: " << m_bad << ", Total: " << m_bad+m_good
+                << ", Accuracy: " << (double) m_good / (m_good+m_bad) << std::endl;
 }
 
 void Learner::validateKNN(std::vector<std::shared_ptr<Image>> images, int id) {

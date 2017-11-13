@@ -16,6 +16,7 @@ std::string g_inputFile;
 std::string g_outputDir;
 std::string g_knnFile;
 std::string g_cnnFile;
+std::string g_nnFile;
 unsigned int g_number = 1;
 unsigned int g_offset = 0;
 bool g_display = false;
@@ -40,6 +41,7 @@ const std::string ALGO_FINDKNN =        "findKNN";
 const std::string ALGO_VALIDATEKNN =    "validateKNN";
 const std::string ALGO_RUNKNN =         "runKNN";
 const std::string ALGO_VALIDATECNN =    "validateCNN";
+const std::string ALGO_VALIDATENN =     "validateNN";
 
 /**
  * Print program usage to stdout
@@ -73,6 +75,7 @@ void printUsage() {
             << "    -c, --cnn        CNN file (Format: 1 2 A)" << std::endl
             << "    -n, --number     Number of images to show" << std::endl
             << "    -k, --knn        Path for the kNN file" << std::endl
+            << "    -N, --nn         Path for the NN file" << std::endl
             << "    -h, --help       Display this help message" << std::endl;
 }
 
@@ -93,13 +96,14 @@ void initParams(int argc, char *argv[]) {
             {"cmatrix",   no_argument,       0, 'M'},
             {"cnn",   required_argument,       0, 'c'},
             {"knn",   required_argument,       0, 'k'},
+            {"nn",   required_argument,       0, 'N'},
             {"help",   no_argument,       0, 'h'},
             {0, 0,                        0, 0}
     };
 
     int optionIndex = 0;
     int c;
-    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dmk:Mc:", longOptions, &optionIndex)) != -1) {
+    while ((c = getopt_long(argc, argv, "ho:i:n:s:a:dmk:Mc:N:", longOptions, &optionIndex)) != -1) {
         switch (c) {
             case 'i':
                 g_inputFile = optarg;
@@ -128,6 +132,9 @@ void initParams(int argc, char *argv[]) {
             case 'k':
                 g_knnFile = optarg;
                 break;
+            case 'N':
+                g_nnFile = optarg;
+                break;
             case 'c':
                 g_cnnFile = optarg;
                 break;
@@ -155,6 +162,14 @@ int main( int argc, char** argv ) {
             std::cout << ">> Training kNN completed!" << std::endl;
         } else {
             std::cerr << "Error training kNN" << std::endl;
+        }
+    }
+
+    // Train NN
+    if(!g_nnFile.empty()) {
+        g_learner.initNN();
+        if(g_learner.trainNN(g_nnFile)) {
+            std::cout << ">> Training NN competed" << std::endl;
         }
     }
 
@@ -274,6 +289,12 @@ int main( int argc, char** argv ) {
                 for (auto outputImage : outputImages) {
                     std::shared_ptr<Image> erodeImage = outputImage->blur();
                     manipOutputImages.push_back(erodeImage);
+                }
+                outputImages = manipOutputImages;
+            } else if(algo == ALGO_VALIDATENN) {
+                std::vector<std::shared_ptr<Image>> manipOutputImages;
+                for (auto outputImage : outputImages) {
+                    g_learner.validateNN(outputImage, progress);
                 }
                 outputImages = manipOutputImages;
             } else if(algo == ALGO_FINDKNN) {
