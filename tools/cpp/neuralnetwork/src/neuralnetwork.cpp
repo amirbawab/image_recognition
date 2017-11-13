@@ -1,6 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
+#include <memory>
+#include <vector>
+#include <cmath>
 #include <getopt.h>
 
 // Global variables
@@ -45,15 +48,81 @@ void initParams(int argc, char *argv[]) {
     }
 }
 
+/*****************
+ * NEURAL NETWORK
+ ****************/
+
+struct Node;
+struct Edge {
+    double weight = 0;
+    std::shared_ptr<Node> fromNode;
+    std::shared_ptr<Node> toNode;
+};
+
+struct Node : public std::enable_shared_from_this {
+    double _z = 0;
+    std::vector<std::shared_ptr<Edge>> inEdges;
+    std::vector<std::shared_ptr<Edge>> outEdges;
+    void connectTo(std::shared_ptr<Node> node) {
+        std::shared_ptr<Edge> newEdge = std::make_shared<Edge>();
+        newEdge->weight = (double) rand() / (RAND_MAX + 1.0);
+        newEdge->fromNode = shared_from_this();
+        newEdge->toNode = node;
+        node->inEdges.push_back(newEdge);
+        outEdges.push_back(newEdge);
+    }
+    double sigmoidZ() {
+        return 1.0d / (1.0d + std::exp(-_z));
+    }
+};
+
+struct Layer : public std::enable_shared_from_this {
+    std::vector<std::shared_ptr<Node>> nodes;
+    Layer(int num) {
+
+        // Create num+1 nodes
+        for(int i=0; i <= num; i++) {
+            std::shared_ptr<Node> newNode = std::make_shared<Node>();
+            nodes.push_back(newNode);
+        }
+
+        // Configure bias node
+        if(!nodes.empty()) {
+            nodes.front()->_z = 1;
+        }
+    }
+};
+
+struct Network {
+    std::vector<std::shared_ptr<Layer>> layers;
+    void addLayer(int nodes) {
+        std::shared_ptr<Layer> newLayer = std::make_shared<Layer>(nodes);
+        if(!layers.empty()) {
+            for(std::shared_ptr<Node> pNode : layers.back()->nodes) {
+                for(std::shared_ptr<Node> nNode : newLayer->nodes) {
+                    pNode->connectTo(nNode);
+                }
+            }
+        }
+        layers.push_back(newLayer);
+    }
+};
+
 int main( int argc, char** argv ) {
     // Initialize parameters
     initParams(argc, argv);
 
     // Check for missing params
-    if(g_inputFile.empty()) {
-        printUsage();
-        return 0;
-    }
+    // TODO Uncomment this later
+//    if(g_inputFile.empty()) {
+//        printUsage();
+//        return 0;
+//    }
+
+    // Configure seeded random
+    srand(time(NULL));
+
+    // Small network
 
     return 0;
 }
