@@ -54,9 +54,9 @@ void initParams(int argc, char *argv[]) {
  * NEURAL NETWORK
  ****************/
 
-#define BATCH 4
-#define EPOCH 2
-#define ALPHA 0.01
+#define BATCH 1
+#define EPOCH 100000
+#define ALPHA 0.000001
 
 struct Node;
 struct Edge {
@@ -147,24 +147,14 @@ struct Network {
         }
 
         // Feed forward
-        std::cout << ">> Predicting with feed forward" << std::endl;
         for(size_t layer = 1; layer < layers.size(); layer++) {
-            std::cout << ">>>> For layer " << layer << std::endl;
             for(int nId =1; nId < layers[layer]->nodes.size(); nId++) {
-                std::cout << ">>>>>> For node " << nId << std::endl;
                 std::shared_ptr<Node> curNode = layers[layer]->nodes[nId];
                 curNode->z = 0;
-                std::cout << "g(z)=g(";
                 for(int inId = 0; inId < curNode->inEdges.size(); inId++) {
                     curNode->z += curNode->inEdges[inId]->weight * curNode->inEdges[inId]->fromNode->z;
-                    if(inId > 0) {
-                        std::cout << " + ";
-                    }
-                    std::cout << curNode->inEdges[inId]->weight << " * " << curNode->inEdges[inId]->fromNode->z;
                 }
-                std::cout << ") = g(" << curNode->z << ") = ";
                 curNode->sigmoidZ();
-                std::cout << curNode->z << std::endl;
             }
         }
 
@@ -239,7 +229,7 @@ struct Network {
 
                     // Back propagation
                     // Step 1: Compute the delta for the output layer
-                    std::cout << ">> Back propagation" << std::endl;
+                    std::cout << std::endl << ">> Back propagation" << std::endl;
                     std::cout << ">>>> For output layer" << std::endl;
                     for(size_t nId =1; nId < layers.back()->nodes.size(); nId++) {
                         std::cout << ">>>>>> For node " << nId << std::endl;
@@ -250,7 +240,7 @@ struct Network {
 
                     // Step 2: Compute the delta for the hidden layers
                     for(size_t layer = layers.size()-2; layer > 0; layer--) {
-                        std::cout << ">> For hidden layer " << layer << std::endl;
+                        std::cout << std::endl << ">> For hidden layer " << layer << std::endl;
                         for(int nId =1; nId < layers[layer]->nodes.size(); nId++) {
                             std::cout << ">>>> For node " << nId << std::endl;
                             std::shared_ptr<Node> hidNode = layers[layer]->nodes[nId];
@@ -271,7 +261,7 @@ struct Network {
                 }
 
                 // Update weights
-                std::cout << ">> Updating weights" << std::endl;
+                std::cout << std::endl << ">> Updating weights" << std::endl;
                 for(int layer=0; layer < layers.size()-1; layer++) {
                     std::cout << ">>>> For layer " << layer << std::endl;
                     std::shared_ptr<Layer> curLayer = layers[layer];
@@ -330,11 +320,17 @@ int main( int argc, char** argv ) {
 //    andNet.layers[1]->nodes[0]->outEdges[0]->weight = 0.3;
 //    andNet.layers[1]->nodes[1]->outEdges[0]->weight = -1.2;
 //    andNet.layers[1]->nodes[2]->outEdges[0]->weight = 1.1;
-    andNet.run({{1,1},{0,0},{1,0},{0,1}}, {{0},{0},{1},{1}});
-//    andNet.run({{1,1},{0,0}}, {{0},{0}});
-    std::cout << andNet.str() << std::endl;
-    for(double i : andNet.predict({1,1})) {
-        std::cout << i << std::endl;
+    std::vector<std::vector<int>> X = {{1,1},{0,0},{1,0},{0,1}};
+    std::vector<std::vector<int>> Y = {{1},{1},{0},{0}};
+    andNet.run(X, Y);
+
+    // Predict for the same input
+    for(int i=0; i < X.size(); i++) {
+        std::cout << "Predicting for example " << i << ": ";
+        for(double out : andNet.predict(X[i])) {
+            std::cout << out << " ";
+        }
+        std::cout << std::endl;
     }
 
     return 0;
