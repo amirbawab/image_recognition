@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 #include <cmath>
+#include <string>
+#include <sstream>
 #include <getopt.h>
 
 // Global variables
@@ -59,7 +61,7 @@ struct Edge {
     std::shared_ptr<Node> toNode;
 };
 
-struct Node : public std::enable_shared_from_this {
+struct Node : public std::enable_shared_from_this<Node> {
     double _z = 0;
     std::vector<std::shared_ptr<Edge>> inEdges;
     std::vector<std::shared_ptr<Edge>> outEdges;
@@ -73,6 +75,19 @@ struct Node : public std::enable_shared_from_this {
     }
     double sigmoidZ() {
         return 1.0d / (1.0d + std::exp(-_z));
+    }
+    std::string str() {
+        std::stringstream ss;
+        ss << "[w:";
+        for(int i=0; i < inEdges.size(); i++) {
+            if(i > 0) {
+                ss << ", ";
+            }
+            ss << inEdges[i]->weight;
+        }
+        ss << "](v:";
+        ss << sigmoidZ() << ")";
+        return ss.str();
     }
 };
 
@@ -91,6 +106,15 @@ struct Layer {
             nodes.front()->_z = 1;
         }
     }
+    std::string str() {
+        std::stringstream ss;
+        for(int i=0; i < nodes.size(); i++) {
+            if(nodes[i]->inEdges.size() > 0 || nodes[i]->outEdges.size() > 0) {
+                ss << nodes[i]->str() << " ";
+            }
+        }
+        return ss.str();
+    }
 };
 
 struct Network {
@@ -100,13 +124,21 @@ struct Network {
 
         // If not input layer
         if(!layers.empty()) {
-            for(int i =1 /*skip bias*/; i < layers.back()->nodes.size(); i++) {
-                for(int j=0; j < newLayer->nodes.size(); j++) {
+            for(int i =0; i < layers.back()->nodes.size(); i++) {
+                for(int j=1; j < newLayer->nodes.size(); j++) {
                     layers.back()->nodes[i]->connectTo(newLayer->nodes[j]);
                 }
             }
         }
         layers.push_back(newLayer);
+    }
+    std::string str() {
+        std::stringstream ss;
+        for(int i=0; i < layers.size(); i++) {
+            ss << "Layer " << i+1 << std::endl;
+            ss << layers[i]->str() << std::endl << std::endl;
+        }
+        return ss.str();
     }
 };
 
@@ -125,7 +157,10 @@ int main( int argc, char** argv ) {
     srand(time(NULL));
 
     // Small network
-
+    struct Network andNet;
+    andNet.addLayer(2);
+    andNet.addLayer(1);
+    std::cout << andNet.str() << std::endl;
 
     return 0;
 }
