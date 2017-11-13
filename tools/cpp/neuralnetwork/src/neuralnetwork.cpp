@@ -55,13 +55,12 @@ void initParams(int argc, char *argv[]) {
  ****************/
 
 #define BATCH 4
-#define EPOCH 5
+#define EPOCH 2000
 #define ALPHA 0.1
 
 struct Node;
 struct Edge {
     double weight = 0;
-    double delta = 0;
     std::shared_ptr<Node> fromNode;
     std::shared_ptr<Node> toNode;
 };
@@ -74,15 +73,13 @@ struct Node : public std::enable_shared_from_this<Node> {
     void connectTo(std::shared_ptr<Node> node) {
         std::shared_ptr<Edge> newEdge = std::make_shared<Edge>();
         newEdge->weight = (double) rand() / (RAND_MAX + 1.0);
-        newEdge->weight = 0.5; // FIXME Remove this line
-        newEdge->delta = 0;
         newEdge->fromNode = shared_from_this();
         newEdge->toNode = node;
         node->inEdges.push_back(newEdge);
         outEdges.push_back(newEdge);
     }
     void sigmoidZ() {
-        z = 1.0d / (1.0d + std::exp(-z));
+        z = 1.0 / (1.0 + std::exp(-z));
     }
     std::string str() {
         std::stringstream ss;
@@ -111,7 +108,7 @@ struct Layer {
 
         // Configure bias node
         if(!nodes.empty()) {
-            nodes.front()->z = 1;
+            nodes.front()->z = -1;
         }
     }
     std::string str() {
@@ -140,6 +137,34 @@ struct Network {
         }
         layers.push_back(newLayer);
     }
+
+    std::vector<double> predict(std::vector<int> X) {
+        std::vector<double> output;
+
+        // Update the input nodes values
+        for(int i=1; i < layers.front()->nodes.size(); i++) {
+            layers.front()->nodes[i]->z = X[i-1];
+        }
+
+        // Feed forward
+        for(size_t layer = 1; layer < layers.size(); layer++) {
+            for(int nId =1; nId < layers[layer]->nodes.size(); nId++) {
+                std::shared_ptr<Node> curNode = layers[layer]->nodes[nId];
+                curNode->z = 0;
+                for(int inId = 0; inId < curNode->inEdges.size(); inId++) {
+                    curNode->z += curNode->inEdges[inId]->weight * curNode->inEdges[inId]->fromNode->z;
+                }
+                curNode->sigmoidZ();
+            }
+        }
+
+        // Copy results from output nodes
+        for(size_t node=1; node < layers.back()->nodes.size(); node++) {
+            output.push_back(layers.back()->nodes[node]->z);
+        }
+        return output;
+    }
+
     void run(std::vector<std::vector<int>> X, std::vector<std::vector<int>> Y) {
 
         // Apply the learning several times
@@ -152,10 +177,6 @@ struct Network {
                 for (int node = 0; node < curLayer->nodes.size(); node++) {
                     std::shared_ptr<Node> curNode = curLayer->nodes[node];
                     curNode->delta = 0;
-                    for (int edge = 0; edge < curNode->outEdges.size(); edge++) {
-                        std::shared_ptr<Edge> curEdge = curNode->outEdges[edge];
-                        curEdge->delta = 0;
-                    }
                 }
             }
 
@@ -196,20 +217,19 @@ struct Network {
                     // Step 1: Compute the delta for the output layer
                     for(size_t nId =1; nId < layers.back()->nodes.size(); nId++) {
                         std::shared_ptr<Node> outNode = layers.back()->nodes[nId];
-                        outNode->delta = outNode->z - Y[example][nId-1];
-//                        outNode->delta = (outNode->z >= 0.5 ? 1 : 0) - Y[example][nId-1];
+                        outNode->delta = outNode->z*(1-outNode->z) * (Y[example][nId-1] - outNode->z);
                     }
 
                     // Step 2: Compute the delta for the hidden layers
                     for(size_t layer = layers.size()-2; layer > 0; layer--) {
                         for(int nId =1; nId < layers[layer]->nodes.size(); nId++) {
                             std::shared_ptr<Node> hidNode = layers[layer]->nodes[nId];
+                            double delta1 = hidNode->z*(1-hidNode->z);
+                            double delta2 = 0;
                             for(int outId =0; outId < hidNode->outEdges.size(); outId++) {
-
-                                // Compute delta for the node
-                                hidNode->delta += (hidNode->outEdges[outId]->weight * hidNode->outEdges[outId]->toNode->delta)
-                                                  * (hidNode->z * (1 - hidNode->z));
+                                delta2 += hidNode->outEdges[outId]->weight * hidNode->outEdges[outId]->toNode->delta;
                             }
+                            hidNode->delta += delta1 * delta2;
                         }
                     }
 
@@ -225,9 +245,7 @@ struct Network {
                         std::shared_ptr<Node> curNode = curLayer->nodes[node];
                         for(int edge=0; edge < curNode->outEdges.size(); edge++) {
                             std::shared_ptr<Edge> curEdge = curNode->outEdges[edge];
-                            // Compute delta for the edge
-                            curEdge->delta += curNode->z * (curEdge->toNode->delta);
-                            curEdge->weight = curEdge->weight - ALPHA * (curEdge->delta/BATCH);
+                            curEdge->weight += ALPHA * (curEdge->toNode->delta/BATCH) * curEdge->fromNode->z;
                         }
                     }
                 }
@@ -261,13 +279,22 @@ int main( int argc, char** argv ) {
     // Small network
     struct Network andNet;
     andNet.addLayer(2);
+    andNet.addLayer(2);
     andNet.addLayer(1);
     // Hardcode weights for now
-//    andNet.layers[0]->nodes[0]->outEdges[0]->weight = -30;
-//    andNet.layers[0]->nodes[1]->outEdges[0]->weight = 20;
-//    andNet.layers[0]->nodes[2]->outEdges[0]->weight = 20;
-    andNet.run({{0,0},{0,1},{1,0},{1,1}}, {{0},{0},{0},{1}});
-    std::cout << andNet.str() << std::endl;
+//    andNet.layers[0]->nodes[0]->outEdges[0]->weight = 0.8;
+//    andNet.layers[0]->nodes[0]->outEdges[1]->weight = -0.1;
+//    andNet.layers[0]->nodes[1]->outEdges[0]->weight = 0.4;
+//    andNet.layers[0]->nodes[1]->outEdges[1]->weight = 1.0;
+//    andNet.layers[0]->nodes[2]->outEdges[0]->weight = 0.5;
+//    andNet.layers[0]->nodes[2]->outEdges[1]->weight = 0.9;
+//    andNet.layers[1]->nodes[0]->outEdges[0]->weight = 0.3;
+//    andNet.layers[1]->nodes[1]->outEdges[0]->weight = -1.2;
+//    andNet.layers[1]->nodes[2]->outEdges[0]->weight = 1.1;
+    andNet.run({{1,1},{0,1},{1,0},{0,1}}, {{0},{0},{1},{1}});
+    for(double i : andNet.predict({0,0})) {
+        std::cout << i << std::endl;
+    }
 
     return 0;
 }
