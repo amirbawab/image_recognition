@@ -76,9 +76,9 @@ struct Node : public std::enable_shared_from_this {
     }
 };
 
-struct Layer : public std::enable_shared_from_this {
+struct Layer {
     std::vector<std::shared_ptr<Node>> nodes;
-    Layer(int num) {
+    explicit Layer(int num) {
 
         // Create num+1 nodes
         for(int i=0; i <= num; i++) {
@@ -97,10 +97,12 @@ struct Network {
     std::vector<std::shared_ptr<Layer>> layers;
     void addLayer(int nodes) {
         std::shared_ptr<Layer> newLayer = std::make_shared<Layer>(nodes);
+
+        // If not input layer
         if(!layers.empty()) {
-            for(std::shared_ptr<Node> pNode : layers.back()->nodes) {
-                for(std::shared_ptr<Node> nNode : newLayer->nodes) {
-                    pNode->connectTo(nNode);
+            for(int i =1 /*skip bias*/; i < layers.back()->nodes.size(); i++) {
+                for(int j=0; j < newLayer->nodes.size(); j++) {
+                    layers.back()->nodes[i]->connectTo(newLayer->nodes[j]);
                 }
             }
         }
@@ -123,6 +125,7 @@ int main( int argc, char** argv ) {
     srand(time(NULL));
 
     // Small network
+
 
     return 0;
 }
