@@ -54,27 +54,35 @@ void initParams(int argc, char *argv[]) {
  * NEURAL NETWORK
  ****************/
 
+#define BATCH 4
+#define EPOCH 5
+#define ALPHA 0.1
+
 struct Node;
 struct Edge {
     double weight = 0;
+    double delta = 0;
     std::shared_ptr<Node> fromNode;
     std::shared_ptr<Node> toNode;
 };
 
 struct Node : public std::enable_shared_from_this<Node> {
-    double _z = 0;
+    double z = 0;
+    double delta = 0;
     std::vector<std::shared_ptr<Edge>> inEdges;
     std::vector<std::shared_ptr<Edge>> outEdges;
     void connectTo(std::shared_ptr<Node> node) {
         std::shared_ptr<Edge> newEdge = std::make_shared<Edge>();
         newEdge->weight = (double) rand() / (RAND_MAX + 1.0);
+        newEdge->weight = 0.5; // FIXME Remove this line
+        newEdge->delta = 0;
         newEdge->fromNode = shared_from_this();
         newEdge->toNode = node;
         node->inEdges.push_back(newEdge);
         outEdges.push_back(newEdge);
     }
-    double sigmoidZ() {
-        return 1.0d / (1.0d + std::exp(-_z));
+    void sigmoidZ() {
+        z = 1.0d / (1.0d + std::exp(-z));
     }
     std::string str() {
         std::stringstream ss;
@@ -86,7 +94,7 @@ struct Node : public std::enable_shared_from_this<Node> {
             ss << inEdges[i]->weight;
         }
         ss << "](v:";
-        ss << sigmoidZ() << ")";
+        ss << z << ")";
         return ss.str();
     }
 };
@@ -103,7 +111,7 @@ struct Layer {
 
         // Configure bias node
         if(!nodes.empty()) {
-            nodes.front()->_z = 1;
+            nodes.front()->z = 1;
         }
     }
     std::string str() {
@@ -131,6 +139,100 @@ struct Network {
             }
         }
         layers.push_back(newLayer);
+    }
+    void run(std::vector<std::vector<int>> X, std::vector<std::vector<int>> Y) {
+
+        // Apply the learning several times
+        for(int epoch=0; epoch < EPOCH; epoch++) {
+            std::cout << "Doing epoch " << epoch << std::endl;
+
+            // Reset all delta
+            for(int layer=0; layer < layers.size()-1; layer++) {
+                std::shared_ptr<Layer> curLayer = layers[layer];
+                for (int node = 0; node < curLayer->nodes.size(); node++) {
+                    std::shared_ptr<Node> curNode = curLayer->nodes[node];
+                    curNode->delta = 0;
+                    for (int edge = 0; edge < curNode->outEdges.size(); edge++) {
+                        std::shared_ptr<Edge> curEdge = curNode->outEdges[edge];
+                        curEdge->delta = 0;
+                    }
+                }
+            }
+
+            // Start from first example
+            int example = 0;
+            while(example < X.size()) {
+
+                // Update weights at the end of each batch size
+                std::cout << "Starting a new batch of size " << BATCH << " with example " << example << std::endl;
+                for(int batch = 0; batch < BATCH && example < X.size(); batch++) {
+
+                    // Check that the input and output does not violate the network architecture
+                    if(layers.size() < 2
+                       || layers.front()->nodes.size()-1 != X[example].size()
+                       || layers.back()->nodes.size()-1 != Y[example].size()) {
+                        std::cerr << "Example #" << example << " violates the network architecture: skipping ..." << std::endl;
+                        continue;
+                    }
+
+                    // Update the input nodes values
+                    for(int i=1; i < layers.front()->nodes.size(); i++) {
+                        layers.front()->nodes[i]->z = X[example][i-1];
+                    }
+
+                    // Feed forward
+                    for(size_t layer = 1; layer < layers.size(); layer++) {
+                        for(int nId =1; nId < layers[layer]->nodes.size(); nId++) {
+                            std::shared_ptr<Node> curNode = layers[layer]->nodes[nId];
+                            curNode->z = 0;
+                            for(int inId = 0; inId < curNode->inEdges.size(); inId++) {
+                                curNode->z += curNode->inEdges[inId]->weight * curNode->inEdges[inId]->fromNode->z;
+                            }
+                            curNode->sigmoidZ();
+                        }
+                    }
+
+                    // Back propagation
+                    // Step 1: Compute the delta for the output layer
+                    for(size_t nId =1; nId < layers.back()->nodes.size(); nId++) {
+                        std::shared_ptr<Node> outNode = layers.back()->nodes[nId];
+                        outNode->delta = outNode->z - Y[example][nId-1];
+//                        outNode->delta = (outNode->z >= 0.5 ? 1 : 0) - Y[example][nId-1];
+                    }
+
+                    // Step 2: Compute the delta for the hidden layers
+                    for(size_t layer = layers.size()-2; layer > 0; layer--) {
+                        for(int nId =1; nId < layers[layer]->nodes.size(); nId++) {
+                            std::shared_ptr<Node> hidNode = layers[layer]->nodes[nId];
+                            for(int outId =0; outId < hidNode->outEdges.size(); outId++) {
+
+                                // Compute delta for the node
+                                hidNode->delta += (hidNode->outEdges[outId]->weight * hidNode->outEdges[outId]->toNode->delta)
+                                                  * (hidNode->z * (1 - hidNode->z));
+                            }
+                        }
+                    }
+
+                    // Move to next example
+                    ++example;
+                }
+
+                // Update weights
+                std::cout << "Updating weights" << std::endl;
+                for(int layer=0; layer < layers.size()-1; layer++) {
+                    std::shared_ptr<Layer> curLayer = layers[layer];
+                    for(int node=0; node < curLayer->nodes.size(); node++) {
+                        std::shared_ptr<Node> curNode = curLayer->nodes[node];
+                        for(int edge=0; edge < curNode->outEdges.size(); edge++) {
+                            std::shared_ptr<Edge> curEdge = curNode->outEdges[edge];
+                            // Compute delta for the edge
+                            curEdge->delta += curNode->z * (curEdge->toNode->delta);
+                            curEdge->weight = curEdge->weight - ALPHA * (curEdge->delta/BATCH);
+                        }
+                    }
+                }
+            }
+        }
     }
     std::string str() {
         std::stringstream ss;
@@ -160,6 +262,11 @@ int main( int argc, char** argv ) {
     struct Network andNet;
     andNet.addLayer(2);
     andNet.addLayer(1);
+    // Hardcode weights for now
+//    andNet.layers[0]->nodes[0]->outEdges[0]->weight = -30;
+//    andNet.layers[0]->nodes[1]->outEdges[0]->weight = 20;
+//    andNet.layers[0]->nodes[2]->outEdges[0]->weight = 20;
+    andNet.run({{0,0},{0,1},{1,0},{1,1}}, {{0},{0},{0},{1}});
     std::cout << andNet.str() << std::endl;
 
     return 0;
