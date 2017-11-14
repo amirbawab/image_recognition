@@ -92,13 +92,13 @@ Note: Generate a csv file for test data prediction
 
 ### Run CNN code for segregated images of 28X28
 
-###First train CNN network for classifying image to 12 classes <0,1,....9,A,M>
+### First train CNN network for classifying image to 12 classes <0,1,....9,A,M>
 ```
 python CNN_first_portion_segregated_image_28.py
 ```
 Note: Generate a model h5 file where the weights of the above trained model is stored
 
-###Second train a NN network for classifying image vector of <12X3> into 40 classes
+### Second train a NN network for classifying image vector of <12X3> into 40 classes
 ```
 python CNN_second_portion_segregated_image_28.py
 ```
