@@ -5,6 +5,7 @@
 * OpenCV 3.3.1 [GitHub](https://github.com/opencv/opencv/tree/3.3.1)
 * C++11
 * Build tools: `cd tools/cpp && cmake . && make`
+* Keras
 
 ## OCV File Format
 *Note: All images are expected to be squares*
@@ -82,3 +83,24 @@ To store images in a single OCV file, add the `-M` flag.
         -n1000
 ```
 Hyperparams `EPOCH`, `BATCH` and `ALPHA` (learning rate) are C++ Macros that can be configured from the file under: `tools/cpp/neuralnetwork/include/neuralnetwork/NeuralNetwork.h`
+
+### Run CNN code for entire image of 40X40
+'''
+python CNN_horizontal_image_40.py
+'''
+Note: Generate a csv file for test data prediction
+
+### Run CNN code for segregated images of 28X28
+
+###First train CNN network for classifying image to 12 classes <0,1,....9,A,M>
+'''
+python CNN_first_portion_segregated_image_28.py
+'''
+Note: Generate a model h5 file where the weights of the above trained model is stored
+
+###Second train a NN network for classifying image vector of <12X3> into 40 classes
+'''
+python CNN_second_portion_segregated_image_28.py
+'''
+Note: Uses the above trained model and generates the csv file for test data prediction
+
