@@ -3,7 +3,8 @@
 ## Requirements
 * Linux/Mac OS
 * OpenCV 3.3.1 [GitHub](https://github.com/opencv/opencv/tree/3.3.1)
-* Compile C++ tools `cd tools/cpp && cmake . && make`
+* C++11
+* Build tools: `cd tools/cpp && cmake . && make`
 
 ## OCV File Format
 *Note: All images are expected to be squares*
@@ -40,19 +41,7 @@ For all options, use the `--help` flag
 image2images -i <preprocessed-input> \
         -a binary \
         -a clean \
-        -a align \
-        -d
-```
-Note: To generate PNG images instead of displaying them, replace the `-d` flag with `-o <output-dir>` 
-in order to store the files on disk. To store images in separate OCV files, add the `-m` flag. 
-To store images in a single OCV file, add the `-M` flag.
-
-#### Display permutations of the manipulated images
-```
-image2images -i <preprocessed-input> \
-        -a binary \
-        -a clean \
-        -a permutation \
+        -a align3 \
         -d
 ```
 Note: To generate PNG images instead of displaying them, replace the `-d` flag with `-o <output-dir>` 
@@ -70,3 +59,26 @@ image2images -i <preprocessed-input> \
 Note: To generate PNG images instead of displaying them, replace the `-d` flag with `-o <output-dir>` 
 in order to store the files on disk. To store images in separate OCV files, add the `-m` flag. 
 To store images in a single OCV file, add the `-M` flag.
+
+### Run kNN
+```
+image2images -i <preprocessed-input> \
+        -k <preprocessed-mnist>
+        -a binary \
+        -a clean \
+        -a split \
+        -a validateKNN \
+        -n 1000
+```
+Note: To generate PNG images instead of displaying them, replace the `-d` flag with `-o <output-dir>` 
+in order to store the files on disk. To store images in separate OCV files, add the `-m` flag. 
+To store images in a single OCV file, add the `-M` flag.
+
+### Run Neural Network
+```
+./image2images -i <preprocessed-input> \
+        -N <preprocessed-input> \
+        -a validateNN \
+        -n1000
+```
+Hyperparams `EPOCH`, `BATCH` and `ALPHA` (learning rate) are C++ Macros that can be configured from the file under: `tools/cpp/neuralnetwork/include/neuralnetwork/NeuralNetwork.h`
